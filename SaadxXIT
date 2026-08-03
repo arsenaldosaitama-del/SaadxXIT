@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/wMZCmpyJd3 - Fluxo PvP Aimbot Script (MENU MENOR)
+-- Saadx XIT | discord.gg/wMZCmpyJd3 - Fluxo PvP Aimbot Script (FOV SÓ NO PC)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -14,6 +14,13 @@ local KeysValidas = {
     ["SAADX-72MMNHXRM4TJSAVY"] = "09/08/2026",
     ["SAADX-BM7NFX9A4BG563UB"] = "01/09/2026",
 }
+
+-- ============================================
+-- DETECTAR DISPOSITIVO
+-- ============================================
+local function isMobile()
+    return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+end
 
 local function verificarKey(key)
     local expira = KeysValidas[key]
@@ -31,12 +38,13 @@ local function verificarKey(key)
 end
 
 -- ============================================
--- SCRIPT PRINCIPAL (MENU MENOR)
+-- SCRIPT PRINCIPAL
 -- ============================================
 local function carregarScript()
     local Settings = {Aimbot=false,FOVCircle=false,WallCheck=false,ESPHighlights=false,FOVRadius=150,Smoothness=0.3}
     local fovDrawing, espHighlights, espConnections, espUpdateConnection, espActive, lastESPUpdate = nil, {}, {}, nil, false, 0
     local ESP_UPDATE_INTERVAL, menuCriado = 1.5, false
+    local mobile = isMobile()
 
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "SaadxXIT"
@@ -44,7 +52,39 @@ local function carregarScript()
     screenGui.Parent = LocalPlayer.PlayerGui
 
     -- ============================================
-    -- MENU MENOR (TAMANHO REDUZIDO)
+    -- CRIAR FOV (SÓ NO PC)
+    -- ============================================
+    local function criarFOV()
+        if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
+        if not Settings.FOVCircle then return end
+        if mobile then return end -- NÃO FAZ NADA NO CELULAR
+
+        fovDrawing = Drawing.new("Circle")
+        fovDrawing.Radius = Settings.FOVRadius
+        fovDrawing.Thickness = 2
+        fovDrawing.Color = Color3.fromRGB(255, 0, 0)
+        fovDrawing.Filled = false
+        fovDrawing.Transparency = 0.4
+        fovDrawing.Visible = true
+        fovDrawing.ZIndex = 10
+        local vp = Camera.ViewportSize
+        fovDrawing.Position = Vector2.new(vp.X/2, vp.Y/2)
+    end
+
+    local function atualizarFOV()
+        if not Settings.FOVCircle then
+            if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
+            return
+        end
+        if mobile then return end -- NÃO FAZ NADA NO CELULAR
+        if not fovDrawing then criarFOV() return end
+        fovDrawing.Radius = Settings.FOVRadius
+        local vp = Camera.ViewportSize
+        fovDrawing.Position = Vector2.new(vp.X/2, vp.Y/2)
+    end
+
+    -- ============================================
+    -- MENU (MENOR)
     -- ============================================
     local function criarMenu()
         if menuCriado then return end
@@ -60,7 +100,7 @@ local function carregarScript()
         mainFrame.ClipsDescendants = true
         mainFrame.Parent = screenGui
 
-        -- TÍTULO (COM DISCORD)
+        -- TÍTULO
         local title = Instance.new("Frame")
         title.Size = UDim2.new(1, 0, 0, 28)
         title.Position = UDim2.new(0, 0, 0, 0)
@@ -89,7 +129,6 @@ local function carregarScript()
             if input == dragInput and dragging then update(input) end
         end)
 
-        -- TÍTULO COM NOME + DISCORD
         local titleText = Instance.new("TextLabel")
         titleText.Size = UDim2.new(0.85, 0, 1, 0)
         titleText.Position = UDim2.new(0, 6, 0, 0)
@@ -142,7 +181,7 @@ local function carregarScript()
         options.BorderSizePixel = 0
         options.Parent = mainFrame
 
-        -- TOGGLES (MENORES)
+        -- TOGGLES
         local function criarToggle(text, setting, y)
             local f = Instance.new("Frame")
             f.Size = UDim2.new(1, 0, 0, 26)
@@ -192,15 +231,15 @@ local function carregarScript()
         criarToggle("Wall Check", "WallCheck", 60)
         criarToggle("ESP Highlights", "ESPHighlights", 88)
 
-        -- FOV SLIDER (MENOR)
-        local fovFrame = Instance.new("Frame")
-        fovFrame.Size = UDim2.new(1, 0, 0, 44)
-        fovFrame.Position = UDim2.new(0, 0, 0, 118)
-        fovFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        fovFrame.BackgroundTransparency = 0.2
-        fovFrame.BorderSizePixel = 1
-        fovFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        fovFrame.Parent = options
+        -- FOV SLIDER
+        local fovFrameSlider = Instance.new("Frame")
+        fovFrameSlider.Size = UDim2.new(1, 0, 0, 44)
+        fovFrameSlider.Position = UDim2.new(0, 0, 0, 118)
+        fovFrameSlider.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        fovFrameSlider.BackgroundTransparency = 0.2
+        fovFrameSlider.BorderSizePixel = 1
+        fovFrameSlider.BorderColor3 = Color3.fromRGB(255, 0, 0)
+        fovFrameSlider.Parent = options
 
         local fovLabel = Instance.new("TextLabel")
         fovLabel.Size = UDim2.new(1, 0, 0, 16)
@@ -211,14 +250,14 @@ local function carregarScript()
         fovLabel.TextSize = 11
         fovLabel.Font = Enum.Font.Gotham
         fovLabel.TextXAlignment = Enum.TextXAlignment.Left
-        fovLabel.Parent = fovFrame
+        fovLabel.Parent = fovFrameSlider
 
         local fovSlider = Instance.new("Frame")
         fovSlider.Size = UDim2.new(0.82, 0, 0, 6)
         fovSlider.Position = UDim2.new(0.09, 0, 0.6, 0)
         fovSlider.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
         fovSlider.BorderSizePixel = 0
-        fovSlider.Parent = fovFrame
+        fovSlider.Parent = fovFrameSlider
 
         local fovFill = Instance.new("Frame")
         fovFill.Size = UDim2.new((Settings.FOVRadius-50)/350, 0, 1, 0)
@@ -263,7 +302,7 @@ local function carregarScript()
             end
         end)
 
-        -- SMOOTHNESS SLIDER (MENOR)
+        -- SMOOTHNESS SLIDER
         local smoothFrame = Instance.new("Frame")
         smoothFrame.Size = UDim2.new(1, 0, 0, 44)
         smoothFrame.Position = UDim2.new(0, 0, 0, 166)
@@ -379,29 +418,6 @@ local function carregarScript()
                 Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, Camera.CFrame.Position + dir), Settings.Smoothness)
             end
         end
-    end
-
-    -- ============================================
-    -- FOV CIRCLE
-    -- ============================================
-    local function criarFOV()
-        if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
-        if not Settings.FOVCircle then return end
-        fovDrawing = Drawing.new("Circle")
-        fovDrawing.Radius, fovDrawing.Thickness, fovDrawing.Color, fovDrawing.Filled, fovDrawing.Transparency, fovDrawing.Visible, fovDrawing.ZIndex = Settings.FOVRadius, 2, Color3.fromRGB(255,0,0), false, 0.5, true, 10
-        local vp = Camera.ViewportSize
-        fovDrawing.Position = Vector2.new(vp.X/2, vp.Y/2)
-    end
-
-    local function atualizarFOV()
-        if not Settings.FOVCircle then
-            if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
-            return
-        end
-        if not fovDrawing then criarFOV() return end
-        fovDrawing.Radius = Settings.FOVRadius
-        local vp = Camera.ViewportSize
-        fovDrawing.Position = Vector2.new(vp.X/2, vp.Y/2)
     end
 
     -- ============================================
@@ -531,21 +547,25 @@ local function carregarScript()
     configurarLoop()
 
     RunService.RenderStepped:Connect(function()
-        if Settings.FOVCircle then atualizarFOV() else if fovDrawing then fovDrawing:Remove() fovDrawing = nil end end
+        if Settings.FOVCircle then 
+            atualizarFOV() 
+        else 
+            if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
+        end
         if Settings.Aimbot then aimbot() end
     end)
 
     UserInputService.WindowFocused:Connect(function()
-        if Settings.FOVCircle and fovDrawing then
+        if Settings.FOVCircle and not mobile and fovDrawing then
             local vp = Camera.ViewportSize
             fovDrawing.Position = Vector2.new(vp.X/2, vp.Y/2)
         end
     end)
 
-    if Settings.FOVCircle then criarFOV() end
+    if Settings.FOVCircle and not mobile then criarFOV() end
     if Settings.ESPHighlights then ativarESP() end
 
-    print("✅ Saadx XIT carregado!")
+    print("✅ Saadx XIT carregado! (Mobile: " .. tostring(mobile) .. ")")
 end
 
 -- ============================================
