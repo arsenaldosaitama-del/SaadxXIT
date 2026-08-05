@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/wMZCmpyJd3 - Fluxo PvP Aimbot Script (FOV SÓ NO PC)
+-- Saadx XIT | discord.gg/wMZCmpyJd3 - Fluxo PvP Aimbot Script (DATA CORRIGIDA)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,33 +7,57 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
--- 🔑 SUAS KEYS AQUI
+-- 🔑 SUAS KEYS AQUI (COM DATAS NO FORMATO CORRETO)
 -- ============================================
 local KeysValidas = {
-    ["SAADX-90862MRHH9ZVP7N8"] = "03/08/2026",
-    ["SAADX-72MMNHXRM4TJSAVY"] = "09/08/2026",
-    ["SAADX-BM7NFX9A4BG563UB"] = "01/09/2026",
+    -- FORMATO: ["KEY"] = "DIA/MES/ANO"
+    -- EXEMPLO: ["SAADX-XXXX"] = "10/08/2026"
+    
+    ["SAADX-90862MRHH9ZVP7N8"] = "03/08/2026",  -- 1 dia (JÁ EXPIRADA se hoje for 05/08)
+    ["SAADX-72MMNHXRM4TJSAVY"] = "09/08/2026",  -- 7 dias
+    ["SAADX-BM7NFX9A4BG563UB"] = "01/09/2026",  -- 30 dias
 }
 
 -- ============================================
--- DETECTAR DISPOSITIVO
+-- SISTEMA DE VERIFICAÇÃO CORRIGIDO (100% FUNCIONAL)
 -- ============================================
-local function isMobile()
-    return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-end
-
 local function verificarKey(key)
+    -- Verifica se a key existe
     local expira = KeysValidas[key]
-    if not expira then return false, "❌ KEY INVÁLIDA!" end
-    
-    local dia, mes, ano = expira:match("(%d+)/(%d+)/(%d+)")
-    if dia and mes and ano then
-        dia, mes, ano = tonumber(dia), tonumber(mes), tonumber(ano)
-        local t = os.date("*t")
-        if not (ano > t.year or (ano == t.year and mes > t.month) or (ano == t.year and mes == t.month and dia >= t.day)) then
-            return false, "❌ KEY EXPIRADA! (Expirou em " .. expira .. ")"
-        end
+    if not expira then
+        return false, "❌ KEY INVÁLIDA!"
     end
+    
+    -- Converte a data de expiração para números
+    local dia, mes, ano = expira:match("(%d+)/(%d+)/(%d+)")
+    if not dia or not mes or not ano then
+        return false, "❌ DATA INVÁLIDA! Contate o suporte."
+    end
+    
+    dia = tonumber(dia)
+    mes = tonumber(mes)
+    ano = tonumber(ano)
+    
+    -- Pega a data atual do sistema
+    local agora = os.date("*t")
+    local anoAtual = agora.year
+    local mesAtual = agora.month
+    local diaAtual = agora.day
+    
+    -- CONVERTE TUDO PARA NÚMERO (FORMATO: AAAAMMDD)
+    -- Exemplo: 03/08/2026 → 20260803
+    local dataExpira = ano * 10000 + mes * 100 + dia
+    local dataAtual = anoAtual * 10000 + mesAtual * 100 + diaAtual
+    
+    -- DEBUG (opcional - mostra as datas no console)
+    print("🔍 DATA DE EXPIRAÇÃO: " .. expira .. " (" .. dataExpira .. ")")
+    print("📅 DATA ATUAL: " .. diaAtual .. "/" .. mesAtual .. "/" .. anoAtual .. " (" .. dataAtual .. ")")
+    
+    -- COMPARA AS DATAS
+    if dataAtual > dataExpira then
+        return false, "❌ KEY EXPIRADA! (Expirou em " .. expira .. ")"
+    end
+    
     return true, "✅ KEY VÁLIDA! Bem-vindo ao Saadx XIT!"
 end
 
@@ -44,7 +68,7 @@ local function carregarScript()
     local Settings = {Aimbot=false,FOVCircle=false,WallCheck=false,ESPHighlights=false,FOVRadius=150,Smoothness=0.3}
     local fovDrawing, espHighlights, espConnections, espUpdateConnection, espActive, lastESPUpdate = nil, {}, {}, nil, false, 0
     local ESP_UPDATE_INTERVAL, menuCriado = 1.5, false
-    local mobile = isMobile()
+    local mobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
 
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "SaadxXIT"
@@ -57,7 +81,7 @@ local function carregarScript()
     local function criarFOV()
         if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
         if not Settings.FOVCircle then return end
-        if mobile then return end -- NÃO FAZ NADA NO CELULAR
+        if mobile then return end
 
         fovDrawing = Drawing.new("Circle")
         fovDrawing.Radius = Settings.FOVRadius
@@ -76,7 +100,7 @@ local function carregarScript()
             if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
             return
         end
-        if mobile then return end -- NÃO FAZ NADA NO CELULAR
+        if mobile then return end
         if not fovDrawing then criarFOV() return end
         fovDrawing.Radius = Settings.FOVRadius
         local vp = Camera.ViewportSize
@@ -84,7 +108,7 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- MENU (MENOR)
+    -- MENU
     -- ============================================
     local function criarMenu()
         if menuCriado then return end
@@ -547,11 +571,7 @@ local function carregarScript()
     configurarLoop()
 
     RunService.RenderStepped:Connect(function()
-        if Settings.FOVCircle then 
-            atualizarFOV() 
-        else 
-            if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
-        end
+        if Settings.FOVCircle then atualizarFOV() else if fovDrawing then fovDrawing:Remove() fovDrawing = nil end end
         if Settings.Aimbot then aimbot() end
     end)
 
@@ -565,7 +585,7 @@ local function carregarScript()
     if Settings.FOVCircle and not mobile then criarFOV() end
     if Settings.ESPHighlights then ativarESP() end
 
-    print("✅ Saadx XIT carregado! (Mobile: " .. tostring(mobile) .. ")")
+    print("✅ Saadx XIT carregado!")
 end
 
 -- ============================================
@@ -679,7 +699,9 @@ end
 -- INICIAR
 -- ============================================
 print("========================================")
-print("🔐 SAADX XIT")
-print("📌 Digite sua KEY")
+print("🔐 SAADX XIT - Sistema de Key")
+print("📌 Digite sua KEY para ativar")
+print("📝 Keys disponíveis: " .. #KeysValidas)
 print("========================================")
+
 criarTelaKey()
