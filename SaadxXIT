@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/wMZCmpyJd3 - Fluxo PvP Aimbot Script (DATA CORRIGIDA)
+-- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (DATA CORRIGIDA)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -157,7 +157,7 @@ local function carregarScript()
         titleText.Size = UDim2.new(0.85, 0, 1, 0)
         titleText.Position = UDim2.new(0, 6, 0, 0)
         titleText.BackgroundTransparency = 1
-        titleText.Text = "Saadx XIT | discord.gg/wMZCmpyJd3"
+        titleText.Text = "Saadx XIT | discord.gg/GSWQ3PzTHj"
         titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
         titleText.TextSize = 9
         titleText.Font = Enum.Font.GothamBold
