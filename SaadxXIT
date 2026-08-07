@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (WALLCHECK FINAL)
+-- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (KEY SYSTEM ORIGINAL)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,57 +7,33 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
--- 🔑 SUAS KEYS AQUI (COM DATAS NO FORMATO CORRETO)
+-- 🔑 SUAS KEYS AQUI
 -- ============================================
 local KeysValidas = {
-    -- FORMATO: ["KEY"] = "DIA/MES/ANO"
-    -- EXEMPLO: ["SAADX-XXXX"] = "10/08/2026"
-    
-    ["SAADX-90862MRHH9ZVP7N8"] = "03/08/2026",  -- 1 dia (JÁ EXPIRADA se hoje for 05/08)
-    ["SAADX-72MMNHXRM4TJSAVY"] = "09/08/2026",  -- 7 dias
-    ["SAADX-BM7NFX9A4BG563UB"] = "01/09/2026",  -- 30 dias
+    ["SAADX-90862MRHH9ZVP7N8"] = "03/08/2026",
+    ["SAADX-72MMNHXRM4TJSAVY"] = "09/08/2026",
+    ["SAADX-BM7NFX9A4BG563UB"] = "01/09/2026",
 }
 
 -- ============================================
--- SISTEMA DE VERIFICAÇÃO CORRIGIDO (100% FUNCIONAL)
+-- DETECTAR DISPOSITIVO
 -- ============================================
+local function isMobile()
+    return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+end
+
 local function verificarKey(key)
-    -- Verifica se a key existe
     local expira = KeysValidas[key]
-    if not expira then
-        return false, "❌ KEY INVÁLIDA!"
-    end
+    if not expira then return false, "❌ KEY INVÁLIDA!" end
     
-    -- Converte a data de expiração para números
     local dia, mes, ano = expira:match("(%d+)/(%d+)/(%d+)")
-    if not dia or not mes or not ano then
-        return false, "❌ DATA INVÁLIDA! Contate o suporte."
+    if dia and mes and ano then
+        dia, mes, ano = tonumber(dia), tonumber(mes), tonumber(ano)
+        local t = os.date("*t")
+        if not (ano > t.year or (ano == t.year and mes > t.month) or (ano == t.year and mes == t.month and dia >= t.day)) then
+            return false, "❌ KEY EXPIRADA! (Expirou em " .. expira .. ")"
+        end
     end
-    
-    dia = tonumber(dia)
-    mes = tonumber(mes)
-    ano = tonumber(ano)
-    
-    -- Pega a data atual do sistema
-    local agora = os.date("*t")
-    local anoAtual = agora.year
-    local mesAtual = agora.month
-    local diaAtual = agora.day
-    
-    -- CONVERTE TUDO PARA NÚMERO (FORMATO: AAAAMMDD)
-    -- Exemplo: 03/08/2026 → 20260803
-    local dataExpira = ano * 10000 + mes * 100 + dia
-    local dataAtual = anoAtual * 10000 + mesAtual * 100 + diaAtual
-    
-    -- DEBUG (opcional - mostra as datas no console)
-    print("🔍 DATA DE EXPIRAÇÃO: " .. expira .. " (" .. dataExpira .. ")")
-    print("📅 DATA ATUAL: " .. diaAtual .. "/" .. mesAtual .. "/" .. anoAtual .. " (" .. dataAtual .. ")")
-    
-    -- COMPARA AS DATAS
-    if dataAtual > dataExpira then
-        return false, "❌ KEY EXPIRADA! (Expirou em " .. expira .. ")"
-    end
-    
     return true, "✅ KEY VÁLIDA! Bem-vindo ao Saadx XIT!"
 end
 
@@ -68,7 +44,7 @@ local function carregarScript()
     local Settings = {Aimbot=false,FOVCircle=false,WallCheck=false,ESPHighlights=false,FOVRadius=150,Smoothness=0.3}
     local fovDrawing, espHighlights, espConnections, espUpdateConnection, espActive, lastESPUpdate = nil, {}, {}, nil, false, 0
     local ESP_UPDATE_INTERVAL, menuCriado = 1.5, false
-    local mobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+    local mobile = isMobile()
 
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "SaadxXIT"
@@ -108,7 +84,7 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- MENU
+    -- MENU (MENOR)
     -- ============================================
     local function criarMenu()
         if menuCriado then return end
@@ -401,54 +377,34 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- AIMBOT COM WALLCHECK CORRIGIDO (VERSÃO FINAL)
+    -- AIMBOT
     -- ============================================
     local function getClosestPlayer()
         local closest, shortest = nil, Settings.FOVRadius
-        local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-        local camPos = Camera.CFrame.Position
-        
         for _, p in ipairs(Players:GetPlayers()) do
-            if p == LocalPlayer then continue end
-            if not p.Character then continue end
-            
-            local humanoid = p.Character:FindFirstChild("Humanoid")
-            if not humanoid or humanoid.Health <= 0 then continue end
-            
-            local part = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("HumanoidRootPart")
-            if not part then continue end
-            
-            local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
-            if not onScreen then continue end
-            
-            local distance = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-            if distance >= shortest then continue end
-            
-            -- 🔥 WALLCHECK CORRIGIDO
-            if Settings.WallCheck then
-                local params = RaycastParams.new()
-                params.FilterType = Enum.RaycastFilterType.Blacklist
-                -- 🔥 Ignora APENAS o personagem local (não o inimigo)
-                params.FilterDescendantsInstances = {LocalPlayer.Character}
-                params.IgnoreWater = true
-                
-                -- 🔥 Usa a distância REAL até o alvo (não fixa)
-                local direction = part.Position - camPos
-                local raycastResult = workspace:Raycast(camPos, direction, params)
-                
-                -- 🔥 Se não acertou nada → mira liberada
-                if not raycastResult then
-                    closest, shortest = p, distance
-                -- 🔥 Se acertou o inimigo → mira liberada
-                elseif raycastResult.Instance:IsDescendantOf(p.Character) then
-                    closest, shortest = p, distance
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                local part = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("HumanoidRootPart")
+                if part then
+                    local v, on = Camera:WorldToViewportPoint(part.Position)
+                    if on then
+                        local d = (Vector2.new(v.X, v.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                        if d < shortest then
+                            if Settings.WallCheck then
+                                local params = RaycastParams.new()
+                                params.FilterType = Enum.RaycastFilterType.Blacklist
+                                params.FilterDescendantsInstances = {LocalPlayer.Character}
+                                local result = workspace:Raycast(Camera.CFrame.Position, (part.Position - Camera.CFrame.Position).Unit * 1000, params)
+                                if result and result.Instance:IsDescendantOf(p.Character) then
+                                    closest, shortest = p, d
+                                end
+                            else
+                                closest, shortest = p, d
+                            end
+                        end
+                    end
                 end
-                -- 🔥 Se acertou outra coisa (parede, chão) → BLOQUEIA
-            else
-                closest, shortest = p, distance
             end
         end
-        
         return closest
     end
 
@@ -591,7 +547,11 @@ local function carregarScript()
     configurarLoop()
 
     RunService.RenderStepped:Connect(function()
-        if Settings.FOVCircle then atualizarFOV() else if fovDrawing then fovDrawing:Remove() fovDrawing = nil end end
+        if Settings.FOVCircle then 
+            atualizarFOV() 
+        else 
+            if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
+        end
         if Settings.Aimbot then aimbot() end
     end)
 
@@ -605,7 +565,7 @@ local function carregarScript()
     if Settings.FOVCircle and not mobile then criarFOV() end
     if Settings.ESPHighlights then ativarESP() end
 
-    print("✅ Saadx XIT carregado!")
+    print("✅ Saadx XIT carregado! (Mobile: " .. tostring(mobile) .. ")")
 end
 
 -- ============================================
@@ -719,9 +679,7 @@ end
 -- INICIAR
 -- ============================================
 print("========================================")
-print("🔐 SAADX XIT - Sistema de Key")
-print("📌 Digite sua KEY para ativar")
-print("📝 Keys disponíveis: " .. #KeysValidas)
+print("🔐 SAADX XIT")
+print("📌 Digite sua KEY")
 print("========================================")
-
 criarTelaKey()
