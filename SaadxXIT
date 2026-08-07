@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (DATA CORRIGIDA)
+-- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (WALLCHECK FINAL)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -401,34 +401,54 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- AIMBOT
+    -- AIMBOT COM WALLCHECK CORRIGIDO (VERSÃO FINAL)
     -- ============================================
     local function getClosestPlayer()
         local closest, shortest = nil, Settings.FOVRadius
+        local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        local camPos = Camera.CFrame.Position
+        
         for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                local part = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("HumanoidRootPart")
-                if part then
-                    local v, on = Camera:WorldToViewportPoint(part.Position)
-                    if on then
-                        local d = (Vector2.new(v.X, v.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                        if d < shortest then
-                            if Settings.WallCheck then
-                                local params = RaycastParams.new()
-                                params.FilterType = Enum.RaycastFilterType.Blacklist
-                                params.FilterDescendantsInstances = {LocalPlayer.Character}
-                                local result = workspace:Raycast(Camera.CFrame.Position, (part.Position - Camera.CFrame.Position).Unit * 1000, params)
-                                if result and result.Instance:IsDescendantOf(p.Character) then
-                                    closest, shortest = p, d
-                                end
-                            else
-                                closest, shortest = p, d
-                            end
-                        end
-                    end
+            if p == LocalPlayer then continue end
+            if not p.Character then continue end
+            
+            local humanoid = p.Character:FindFirstChild("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then continue end
+            
+            local part = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("HumanoidRootPart")
+            if not part then continue end
+            
+            local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+            if not onScreen then continue end
+            
+            local distance = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+            if distance >= shortest then continue end
+            
+            -- 🔥 WALLCHECK CORRIGIDO
+            if Settings.WallCheck then
+                local params = RaycastParams.new()
+                params.FilterType = Enum.RaycastFilterType.Blacklist
+                -- 🔥 Ignora APENAS o personagem local (não o inimigo)
+                params.FilterDescendantsInstances = {LocalPlayer.Character}
+                params.IgnoreWater = true
+                
+                -- 🔥 Usa a distância REAL até o alvo (não fixa)
+                local direction = part.Position - camPos
+                local raycastResult = workspace:Raycast(camPos, direction, params)
+                
+                -- 🔥 Se não acertou nada → mira liberada
+                if not raycastResult then
+                    closest, shortest = p, distance
+                -- 🔥 Se acertou o inimigo → mira liberada
+                elseif raycastResult.Instance:IsDescendantOf(p.Character) then
+                    closest, shortest = p, distance
                 end
+                -- 🔥 Se acertou outra coisa (parede, chão) → BLOQUEIA
+            else
+                closest, shortest = p, distance
             end
         end
+        
         return closest
     end
 
