@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (AIMBOT CORRIGIDO)
+-- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (TARGET LOCK + FPS FIX)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -11,7 +11,7 @@ local LocalPlayer = Players.LocalPlayer
 -- ============================================
 local KeysValidas = {
     -- KEYS DE 1 DIA
-    ["SAADX-U8NFOAMBC2C6GJW9"] = "10/08/2026",
+    ["SAADX-90862MRHH9ZVP7N8"] = "09/08/2026",
     ["SAADX-Y2MH6LJ603RD81XL"] = "09/08/2026",
     
     -- KEYS DE 7 DIAS
@@ -47,10 +47,14 @@ end
 -- SCRIPT PRINCIPAL
 -- ============================================
 local function carregarScript()
-    local Settings = {Aimbot=false,FOVCircle=false,WallCheck=false,ESPHighlights=false,FOVRadius=150,Smoothness=0.5}
+    local Settings = {Aimbot=false,FOVCircle=false,WallCheck=false,ESPHighlights=false,FOVRadius=150,Smoothness=0.3}
     local fovDrawing, espHighlights, espConnections, espUpdateConnection, espActive, lastESPUpdate = nil, {}, {}, nil, false, 0
     local ESP_UPDATE_INTERVAL, menuCriado = 1.5, false
     local mobile = isMobile()
+    
+    -- 🔥 TARGET LOCK: Armazena o alvo atual
+    local currentTarget = nil
+    local targetLocked = false
 
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "SaadxXIT"
@@ -322,7 +326,7 @@ local function carregarScript()
         smoothLabel.Size = UDim2.new(1, 0, 0, 16)
         smoothLabel.Position = UDim2.new(0, 8, 0, 2)
         smoothLabel.BackgroundTransparency = 1
-        smoothLabel.Text = "Smooth: 0.5"
+        smoothLabel.Text = "Smooth: 0.3"
         smoothLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         smoothLabel.TextSize = 11
         smoothLabel.Font = Enum.Font.Gotham
@@ -383,59 +387,166 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- AIMBOT CORRIGIDO (MAIS FIRME)
+    -- FUNÇÃO AUXILIAR: VERIFICA SE O ALVO É VÁLIDO
     -- ============================================
-    local function getClosestPlayer()
-        local closest, shortest = nil, Settings.FOVRadius
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                local part = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("HumanoidRootPart")
-                if part then
-                    local v, on = Camera:WorldToViewportPoint(part.Position)
-                    if on then
-                        local d = (Vector2.new(v.X, v.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                        if d < shortest then
-                            if Settings.WallCheck then
-                                local params = RaycastParams.new()
-                                params.FilterType = Enum.RaycastFilterType.Blacklist
-                                params.FilterDescendantsInstances = {LocalPlayer.Character}
-                                local result = workspace:Raycast(Camera.CFrame.Position, (part.Position - Camera.CFrame.Position).Unit * 1000, params)
-                                if result and result.Instance:IsDescendantOf(p.Character) then
-                                    closest, shortest = p, d
-                                end
-                            else
-                                closest, shortest = p, d
-                            end
-                        end
-                    end
-                end
+    local function isTargetValid(player)
+        if not player then return false end
+        if player == LocalPlayer then return false end
+        if not player.Character then return false end
+        
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if not humanoid or humanoid.Health <= 0 then return false end
+        
+        local part = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
+        if not part then return false end
+        
+        local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+        if not onScreen then return false end
+        
+        local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        local distance = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+        
+        -- Verifica se está dentro do FOV
+        if distance > Settings.FOVRadius then return false end
+        
+        -- Verifica WallCheck se ativado
+        if Settings.WallCheck then
+            local params = RaycastParams.new()
+            params.FilterType = Enum.RaycastFilterType.Blacklist
+            params.FilterDescendantsInstances = {LocalPlayer.Character}
+            params.IgnoreWater = true
+            
+            local camPos = Camera.CFrame.Position
+            local direction = part.Position - camPos
+            local raycastResult = workspace:Raycast(camPos, direction, params)
+            
+            if raycastResult and not raycastResult.Instance:IsDescendantOf(player.Character) then
+                return false  -- Bloqueado por parede
             end
         end
-        return closest
+        
+        return true
     end
 
-    local function aimbot()
+    -- ============================================
+    -- FUNÇÃO: ENCONTRA O MELHOR ALVO (COM PREFERÊNCIA PELO ATUAL)
+    -- ============================================
+    local function getClosestPlayer()
+        local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        local camPos = Camera.CFrame.Position
+        
+        local bestPlayer = nil
+        local bestDistance = Settings.FOVRadius
+        
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p == LocalPlayer then continue end
+            if not p.Character then continue end
+            
+            local humanoid = p.Character:FindFirstChild("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then continue end
+            
+            local part = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("HumanoidRootPart")
+            if not part then continue end
+            
+            local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+            if not onScreen then continue end
+            
+            local distance = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+            if distance >= bestDistance then continue end
+            
+            -- WallCheck
+            if Settings.WallCheck then
+                local params = RaycastParams.new()
+                params.FilterType = Enum.RaycastFilterType.Blacklist
+                params.FilterDescendantsInstances = {LocalPlayer.Character}
+                params.IgnoreWater = true
+                
+                local direction = part.Position - camPos
+                local raycastResult = workspace:Raycast(camPos, direction, params)
+                
+                if raycastResult and not raycastResult.Instance:IsDescendantOf(p.Character) then
+                    continue
+                end
+            end
+            
+            bestPlayer = p
+            bestDistance = distance
+        end
+        
+        return bestPlayer, bestDistance
+    end
+
+    -- ============================================
+    -- AIMBOT COM TARGET LOCK E FPS INDEPENDENTE
+    -- ============================================
+    local function aimbot(deltaTime)
         if not Settings.Aimbot then return end
         
-        local target = getClosestPlayer()
-        if not target then return end
+        local target = nil
+        local targetDistance = nil
         
+        -- 🔥 VERIFICA SE O ALVO ATUAL AINDA É VÁLIDO
+        if targetLocked and currentTarget then
+            if isTargetValid(currentTarget) then
+                target = currentTarget
+                -- Atualiza a distância para manter o tracking
+                local part = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
+                if part then
+                    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+                    local pos, _ = Camera:WorldToViewportPoint(part.Position)
+                    targetDistance = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                end
+            else
+                -- 🔥 ALVO PERDEU VALIDADE: Libera o lock
+                targetLocked = false
+                currentTarget = nil
+            end
+        end
+        
+        -- 🔥 SE NÃO TEM ALVO TRAVADO, PROCURA UM NOVO
+        if not target then
+            local newTarget, newDistance = getClosestPlayer()
+            if newTarget then
+                target = newTarget
+                targetDistance = newDistance
+                currentTarget = target
+                targetLocked = true
+            end
+        end
+        
+        -- 🔥 SE NÃO ENCONTROU NENHUM ALVO, SAI
+        if not target then
+            currentTarget = nil
+            targetLocked = false
+            return
+        end
+        
+        -- 🔥 PEGA A PARTE DO ALVO E MIRA
         local part = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
-        if not part then return end
+        if not part then
+            targetLocked = false
+            currentTarget = nil
+            return
+        end
         
-        -- 🔥 CALCULA A DIREÇÃO PARA O ALVO
         local targetPos = part.Position
         local currentPos = Camera.CFrame.Position
         local direction = (targetPos - currentPos).Unit
         
-        -- 🔥 CRIA O CFrame DE MIRA
         local targetCFrame = CFrame.lookAt(currentPos, currentPos + direction)
         
-        -- 🔥 SMOOTHNESS AJUSTADO (VALOR MÍNIMO 0.3 PARA NÃO TREME)
-        local smoothness = math.max(Settings.Smoothness, 0.3)
+        -- 🔥 SMOOTHNESS COM FPS INDEPENDENTE (CORRIGIDO)
+        local smoothValue = math.clamp(Settings.Smoothness, 0.1, 1.0)
         
-        -- 🔥 APLICA A MIRA COM SMOOTHNESS
-        Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, smoothness)
+        -- 🔥 INTERPOLAÇÃO CONSISTENTE BASEADA EM DELTA TIME
+        -- Usa uma fórmula de "lerp por frame" que é consistente em qualquer FPS
+        -- A fórmula: alpha = 1 - (1 - smoothValue) ^ (deltaTime * 60)
+        -- Isso garante que o comportamento seja o mesmo em 30, 60 ou 120 FPS
+        local adjustedSmooth = 1 - (1 - smoothValue) ^ (deltaTime * 60)
+        adjustedSmooth = math.clamp(adjustedSmooth, 0.01, 1.0)
+        
+        -- 🔥 APLICA A MIRA
+        Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, adjustedSmooth)
     end
 
     -- ============================================
@@ -564,13 +675,22 @@ local function carregarScript()
     configurarEventos()
     configurarLoop()
 
-    RunService.RenderStepped:Connect(function()
+    RunService.RenderStepped:Connect(function(deltaTime)
         if Settings.FOVCircle then 
             atualizarFOV() 
         else 
             if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
         end
-        if Settings.Aimbot then aimbot() end
+        
+        if Settings.Aimbot then 
+            aimbot(deltaTime)
+        else
+            -- 🔥 RESETA O TARGET LOCK QUANDO O AIMBOT É DESLIGADO
+            if currentTarget or targetLocked then
+                currentTarget = nil
+                targetLocked = false
+            end
+        end
     end)
 
     UserInputService.WindowFocused:Connect(function()
