@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (DATAS CORRIGIDAS)
+-- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (AIMBOT CORRIGIDO)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,17 +7,17 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
--- 🔑 SUAS KEYS AQUI (COM DATAS CORRIGIDAS)
+-- 🔑 SUAS KEYS AQUI
 -- ============================================
 local KeysValidas = {
-    -- 🔑 KEYS DE 1 DIA (EXPIRAM AMANHÃ - 09/08/2026)
-    ["SAADX-90862MRHH9ZVP7N8"] = "09/08/2026",
+    -- KEYS DE 1 DIA
+    ["SAADX-U8NFOAMBC2C6GJW9"] = "10/08/2026",
     ["SAADX-Y2MH6LJ603RD81XL"] = "09/08/2026",
     
-    -- 🔑 KEYS DE 7 DIAS (EXPIRAM 15/08/2026)
+    -- KEYS DE 7 DIAS
     ["SAADX-72MMNHXRM4TJSAVY"] = "15/08/2026",
     
-    -- 🔑 KEYS DE 30 DIAS (EXPIRAM 07/09/2026)
+    -- KEYS DE 30 DIAS
     ["SAADX-BM7NFX9A4BG563UB"] = "07/09/2026",
 }
 
@@ -47,7 +47,7 @@ end
 -- SCRIPT PRINCIPAL
 -- ============================================
 local function carregarScript()
-    local Settings = {Aimbot=false,FOVCircle=false,WallCheck=false,ESPHighlights=false,FOVRadius=150,Smoothness=0.3}
+    local Settings = {Aimbot=false,FOVCircle=false,WallCheck=false,ESPHighlights=false,FOVRadius=150,Smoothness=0.5}
     local fovDrawing, espHighlights, espConnections, espUpdateConnection, espActive, lastESPUpdate = nil, {}, {}, nil, false, 0
     local ESP_UPDATE_INTERVAL, menuCriado = 1.5, false
     local mobile = isMobile()
@@ -322,7 +322,7 @@ local function carregarScript()
         smoothLabel.Size = UDim2.new(1, 0, 0, 16)
         smoothLabel.Position = UDim2.new(0, 8, 0, 2)
         smoothLabel.BackgroundTransparency = 1
-        smoothLabel.Text = "Smooth: 0.3"
+        smoothLabel.Text = "Smooth: 0.5"
         smoothLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         smoothLabel.TextSize = 11
         smoothLabel.Font = Enum.Font.Gotham
@@ -383,7 +383,7 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- AIMBOT
+    -- AIMBOT CORRIGIDO (MAIS FIRME)
     -- ============================================
     local function getClosestPlayer()
         local closest, shortest = nil, Settings.FOVRadius
@@ -416,14 +416,26 @@ local function carregarScript()
 
     local function aimbot()
         if not Settings.Aimbot then return end
+        
         local target = getClosestPlayer()
-        if target then
-            local part = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
-            if part then
-                local dir = (part.Position - Camera.CFrame.Position).Unit
-                Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, Camera.CFrame.Position + dir), Settings.Smoothness)
-            end
-        end
+        if not target then return end
+        
+        local part = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
+        if not part then return end
+        
+        -- 🔥 CALCULA A DIREÇÃO PARA O ALVO
+        local targetPos = part.Position
+        local currentPos = Camera.CFrame.Position
+        local direction = (targetPos - currentPos).Unit
+        
+        -- 🔥 CRIA O CFrame DE MIRA
+        local targetCFrame = CFrame.lookAt(currentPos, currentPos + direction)
+        
+        -- 🔥 SMOOTHNESS AJUSTADO (VALOR MÍNIMO 0.3 PARA NÃO TREME)
+        local smoothness = math.max(Settings.Smoothness, 0.3)
+        
+        -- 🔥 APLICA A MIRA COM SMOOTHNESS
+        Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, smoothness)
     end
 
     -- ============================================
