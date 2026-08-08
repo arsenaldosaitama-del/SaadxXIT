@@ -10,7 +10,7 @@ local LocalPlayer = Players.LocalPlayer
 -- 🔑 SUAS KEYS AQUI
 -- ============================================
 local KeysValidas = {
-    ["SAADX-Y2MH6LJ603RD81XL"] = "04/08/2026",
+    ["SAADX-Y2MH6LJ603RD81XL"] = "09/08/2026",
     ["SAADX-72MMNHXRM4TJSAVY"] = "09/08/2026",
     ["SAADX-BM7NFX9A4BG563UB"] = "01/09/2026",
 }
