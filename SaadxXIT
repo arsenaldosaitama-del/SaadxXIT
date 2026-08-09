@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (KEY EXPIRAÇÃO CORRIGIDA)
+-- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (COM DEBUG)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,32 +7,18 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
--- 🔑 SUAS KEYS AQUI (ATUALIZE AS DATAS CONFORME NECESSÁRIO)
+-- 🔑 SUAS KEYS AQUI
 -- ============================================
 local KeysValidas = {
-    -- 🔥 ATUALIZE AS DATAS AQUI!
-    -- Exemplo: ["SAADX-XXXX"] = "DIA/MES/ANO"
-    
-    -- KEYS DE 1 DIA (expira amanhã)
-    ["SAADX-90862MRHH9ZVP7N8"] = "09/08/2026",
+    -- 🔥 COLOQUE UMA KEY COM DATA ANTIGA PARA TESTAR
+    ["SAADX-90862MRHH9ZVP7N8"] = "08/08/2026",  -- JÁ EXPIRADA (se hoje for 09/08)
     ["SAADX-Y2MH6LJ603RD81XL"] = "08/08/2026",
-    
-    -- KEYS DE 7 DIAS
     ["SAADX-72MMNHXRM4TJSAVY"] = "16/08/2026",
-    
-    -- KEYS DE 30 DIAS
     ["SAADX-BM7NFX9A4BG563UB"] = "08/09/2026",
 }
 
 -- ============================================
--- DETECTAR DISPOSITIVO
--- ============================================
-local function isMobile()
-    return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-end
-
--- ============================================
--- SISTEMA DE VERIFICAÇÃO CORRIGIDO (EXPIRAÇÃO GARANTIDA)
+-- SISTEMA DE VERIFICAÇÃO COM DEBUG
 -- ============================================
 local function verificarKey(key)
     local expira = KeysValidas[key]
@@ -40,7 +26,6 @@ local function verificarKey(key)
         return false, "❌ KEY INVÁLIDA!"
     end
     
-    -- Converte a data de expiração para números
     local dia, mes, ano = expira:match("(%d+)/(%d+)/(%d+)")
     if not dia or not mes or not ano then
         return false, "❌ DATA INVÁLIDA! Contate o suporte."
@@ -50,23 +35,35 @@ local function verificarKey(key)
     mes = tonumber(mes)
     ano = tonumber(ano)
     
-    -- Pega a data atual do sistema
     local agora = os.date("*t")
     local anoAtual = agora.year
     local mesAtual = agora.month
     local diaAtual = agora.day
     
-    -- CONVERTE TUDO PARA NÚMERO (FORMATO: AAAAMMDD)
-    -- Exemplo: 03/08/2026 → 20260803
     local dataExpira = ano * 10000 + mes * 100 + dia
     local dataAtual = anoAtual * 10000 + mesAtual * 100 + diaAtual
     
-    -- 🔥 COMPARA AS DATAS (SE DATA ATUAL > DATA EXPIRAÇÃO → EXPIRADA)
+    -- 🔥 DEBUG (MOSTRA NO CONSOLE)
+    print("========================================")
+    print("🔍 VERIFICANDO KEY: " .. key)
+    print("📅 DATA DE EXPIRAÇÃO: " .. expira .. " (" .. dataExpira .. ")")
+    print("📅 DATA ATUAL DO SISTEMA: " .. diaAtual .. "/" .. mesAtual .. "/" .. anoAtual .. " (" .. dataAtual .. ")")
+    print("========================================")
+    
     if dataAtual > dataExpira then
+        print("❌ KEY EXPIRADA! (dataAtual > dataExpira)")
         return false, "❌ KEY EXPIRADA! (Expirou em " .. expira .. ")"
     end
     
+    print("✅ KEY VÁLIDA!")
     return true, "✅ KEY VÁLIDA! Bem-vindo ao Saadx XIT!"
+end
+
+-- ============================================
+-- DETECTAR DISPOSITIVO
+-- ============================================
+local function isMobile()
+    return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
 end
 
 -- ============================================
@@ -100,7 +97,6 @@ local function carregarScript()
     screenGui.ResetOnSpawn = false
     screenGui.Parent = LocalPlayer.PlayerGui
 
-    -- Verificar se Drawing está disponível
     local drawingAvailable = pcall(function()
         local testLine = Drawing.new("Line")
         testLine:Remove()
@@ -143,16 +139,12 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- ESP LINE (FUNCIONA NO PC E MOBILE)
+    -- ESP LINE
     -- ============================================
-    
     local function createESPLineForPlayer(player)
         if not player or player == LocalPlayer then return end
         if not drawingAvailable then return end
-        
-        if espLines[player] then
-            return
-        end
+        if espLines[player] then return end
         
         local character = player.Character
         if not character then return end
@@ -604,7 +596,7 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- FUNÇÃO AUXILIAR: VERIFICA SE O ALVO É VÁLIDO
+    -- AIMBOT
     -- ============================================
     local function isTargetValid(player)
         if not player then return false end
@@ -643,9 +635,6 @@ local function carregarScript()
         return true
     end
 
-    -- ============================================
-    -- AIMBOT COM TARGET LOCK
-    -- ============================================
     local function getClosestPlayer()
         local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
         local camPos = Camera.CFrame.Position
@@ -694,17 +683,10 @@ local function carregarScript()
         if not Settings.Aimbot then return end
         
         local target = nil
-        local targetDistance = nil
         
         if targetLocked and currentTarget then
             if isTargetValid(currentTarget) then
                 target = currentTarget
-                local part = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
-                if part then
-                    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-                    local pos, _ = Camera:WorldToViewportPoint(part.Position)
-                    targetDistance = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-                end
             else
                 targetLocked = false
                 currentTarget = nil
@@ -712,10 +694,9 @@ local function carregarScript()
         end
         
         if not target then
-            local newTarget, newDistance = getClosestPlayer()
+            local newTarget, _ = getClosestPlayer()
             if newTarget then
                 target = newTarget
-                targetDistance = newDistance
                 currentTarget = target
                 targetLocked = true
             end
