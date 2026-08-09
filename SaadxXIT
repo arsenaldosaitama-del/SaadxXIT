@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (TARGET LOCK + FPS FIX)
+-- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (ESP LINE MOBILE FIX)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -47,19 +47,42 @@ end
 -- SCRIPT PRINCIPAL
 -- ============================================
 local function carregarScript()
-    local Settings = {Aimbot=false,FOVCircle=false,WallCheck=false,ESPHighlights=false,FOVRadius=150,Smoothness=0.3}
-    local fovDrawing, espHighlights, espConnections, espUpdateConnection, espActive, lastESPUpdate = nil, {}, {}, nil, false, 0
-    local ESP_UPDATE_INTERVAL, menuCriado = 1.5, false
+    local Settings = {
+        Aimbot = false,
+        FOVCircle = false,
+        WallCheck = false,
+        ESPHighlights = false,
+        ESPLine = false,
+        FOVRadius = 150,
+        Smoothness = 0.3,
+    }
+    local fovDrawing = nil
+    local espHighlights = {}
+    local espLines = {}          -- espLines[player] = { line, connections }
+    local espConnections = {}
+    local espUpdateConnection = nil
+    local espActive = false
+    local lastESPUpdate = 0
+    local ESP_UPDATE_INTERVAL = 1.5
+    local menuCriado = false
     local mobile = isMobile()
-    
-    -- 🔥 TARGET LOCK: Armazena o alvo atual
-    local currentTarget = nil
     local targetLocked = false
+    local currentTarget = nil
 
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "SaadxXIT"
     screenGui.ResetOnSpawn = false
     screenGui.Parent = LocalPlayer.PlayerGui
+
+    -- Verificar se Drawing está disponível
+    local drawingAvailable = pcall(function()
+        local testLine = Drawing.new("Line")
+        testLine:Remove()
+        return true
+    end)
+    if not drawingAvailable then
+        print("⚠️ API Drawing não disponível. ESP Line pode não funcionar.")
+    end
 
     -- ============================================
     -- CRIAR FOV (SÓ NO PC)
@@ -94,15 +117,192 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- MENU (MENOR)
+    -- ESP LINE (FUNCIONA NO PC E MOBILE)
+    -- ============================================
+    
+    -- Função para criar a linha de um jogador
+    local function createESPLineForPlayer(player)
+        if not player or player == LocalPlayer then return end
+        if not drawingAvailable then return end
+        
+        -- 🔥 REMOVIDO: if mobile then return end
+        
+        -- Verifica se já existe uma linha para este jogador
+        if espLines[player] then
+            return
+        end
+        
+        local character = player.Character
+        if not character then return end
+        
+        local humanoid = character:FindFirstChild("Humanoid")
+        if not humanoid or humanoid.Health <= 0 then return end
+        
+        -- 🔥 CRIA A LINHA (FUNCIONA NO PC E MOBILE)
+        local line = Drawing.new("Line")
+        line.Color = Color3.fromRGB(255, 0, 0)
+        line.Thickness = 2
+        line.Transparency = 0.3
+        line.Visible = false
+        line.ZIndex = 5
+        
+        espLines[player] = {
+            line = line,
+            connections = {},
+            active = true,
+        }
+    end
+    
+    -- Função para atualizar a posição da linha
+    local function updateESPLinePosition(player)
+        if not player or player == LocalPlayer then return end
+        
+        local data = espLines[player]
+        if not data or not data.line then return end
+        
+        local character = player.Character
+        if not character then
+            data.line.Visible = false
+            return
+        end
+        
+        local humanoid = character:FindFirstChild("Humanoid")
+        if not humanoid or humanoid.Health <= 0 then
+            data.line.Visible = false
+            return
+        end
+        
+        local part = character:FindFirstChild("Head") or character:FindFirstChild("HumanoidRootPart")
+        if not part then
+            data.line.Visible = false
+            return
+        end
+        
+        -- 🔥 PROJETA A POSIÇÃO DO JOGADOR NA TELA
+        local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+        
+        if not onScreen or screenPos.Z <= 0 then
+            data.line.Visible = false
+            return
+        end
+        
+        -- 🔥 DESENHA A LINHA DA PARTE INFERIOR DA TELA ATÉ O JOGADOR
+        local viewport = Camera.ViewportSize
+        local bottomCenter = Vector2.new(viewport.X / 2, viewport.Y)
+        
+        data.line.From = bottomCenter
+        data.line.To = Vector2.new(screenPos.X, screenPos.Y)
+        data.line.Visible = true
+    end
+    
+    -- Função para remover a linha de um jogador
+    local function removeESPLineForPlayer(player)
+        local data = espLines[player]
+        if not data then return end
+        
+        if data.connections then
+            for _, conn in ipairs(data.connections) do
+                if conn then conn:Disconnect() end
+            end
+            data.connections = {}
+        end
+        
+        if data.line then
+            data.line:Remove()
+        end
+        
+        espLines[player] = nil
+    end
+    
+    -- Função para remover todas as linhas
+    local function removeAllESPLine()
+        for player, data in pairs(espLines) do
+            if data and data.line then
+                data.line:Remove()
+            end
+            espLines[player] = nil
+        end
+        espLines = {}
+    end
+    
+    -- Função para criar linhas para todos os jogadores
+    local function createESPLineForAllPlayers()
+        if not Settings.ESPLine then
+            removeAllESPLine()
+            return
+        end
+        
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                createESPLineForPlayer(player)
+            end
+        end
+    end
+    
+    -- Função para atualizar todas as linhas (chamada no RenderStepped)
+    local function updateAllESPLine()
+        if not Settings.ESPLine then
+            return
+        end
+        
+        for player, _ in pairs(espLines) do
+            updateESPLinePosition(player)
+        end
+    end
+    
+    -- Configurar eventos de jogadores para ESP Line
+    local function setupPlayerLineEvents(player)
+        if player == LocalPlayer then return end
+        
+        -- Limpar conexões antigas
+        local data = espLines[player]
+        if data and data.connections then
+            for _, conn in ipairs(data.connections) do
+                if conn then conn:Disconnect() end
+            end
+            data.connections = {}
+        end
+        
+        local connections = {}
+        
+        -- CharacterAdded: Criar linha
+        local charAddedConn = player.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            if Settings.ESPLine then
+                createESPLineForPlayer(player)
+            end
+        end)
+        table.insert(connections, charAddedConn)
+        
+        -- CharacterRemoving: Remover linha
+        local charRemovingConn = player.CharacterRemoving:Connect(function()
+            removeESPLineForPlayer(player)
+        end)
+        table.insert(connections, charRemovingConn)
+        
+        -- PlayerRemoving: Remover linha
+        local playerRemovingConn = player.AncestryChanged:Connect(function()
+            if not player.Parent then
+                removeESPLineForPlayer(player)
+            end
+        end)
+        table.insert(connections, playerRemovingConn)
+        
+        if espLines[player] then
+            espLines[player].connections = connections
+        end
+    end
+
+    -- ============================================
+    -- MENU
     -- ============================================
     local function criarMenu()
         if menuCriado then return end
         menuCriado = true
         
         local mainFrame = Instance.new("Frame")
-        mainFrame.Size = UDim2.new(0, 240, 0, 300)
-        mainFrame.Position = UDim2.new(0.5, -120, 0.5, -150)
+        mainFrame.Size = UDim2.new(0, 240, 0, 330)
+        mainFrame.Position = UDim2.new(0.5, -120, 0.5, -165)
         mainFrame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
         mainFrame.BackgroundTransparency = 0.1
         mainFrame.BorderSizePixel = 2
@@ -177,7 +377,7 @@ local function carregarScript()
         local minimized = false
         minBtn.MouseButton1Click:Connect(function()
             minimized = not minimized
-            mainFrame.Size = minimized and UDim2.new(0, 240, 0, 28) or UDim2.new(0, 240, 0, 300)
+            mainFrame.Size = minimized and UDim2.new(0, 240, 0, 28) or UDim2.new(0, 240, 0, 330)
             for _, child in ipairs(mainFrame:GetChildren()) do
                 if child ~= title then child.Visible = not minimized end
             end
@@ -229,8 +429,17 @@ local function carregarScript()
                 Settings[setting] = not Settings[setting]
                 btn.BackgroundColor3 = Settings[setting] and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(100, 0, 0)
                 btn.Text = Settings[setting] and "ON" or "OFF"
+                
                 if setting == "ESPHighlights" then
                     if Settings.ESPHighlights then ativarESP() else desativarESP() end
+                end
+                
+                if setting == "ESPLine" then
+                    if Settings.ESPLine then
+                        createESPLineForAllPlayers()
+                    else
+                        removeAllESPLine()
+                    end
                 end
             end)
             return btn
@@ -240,11 +449,12 @@ local function carregarScript()
         criarToggle("FOV Circle", "FOVCircle", 32)
         criarToggle("Wall Check", "WallCheck", 60)
         criarToggle("ESP Highlights", "ESPHighlights", 88)
+        criarToggle("ESP Line", "ESPLine", 116)
 
         -- FOV SLIDER
         local fovFrameSlider = Instance.new("Frame")
         fovFrameSlider.Size = UDim2.new(1, 0, 0, 44)
-        fovFrameSlider.Position = UDim2.new(0, 0, 0, 118)
+        fovFrameSlider.Position = UDim2.new(0, 0, 0, 148)
         fovFrameSlider.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
         fovFrameSlider.BackgroundTransparency = 0.2
         fovFrameSlider.BorderSizePixel = 1
@@ -315,7 +525,7 @@ local function carregarScript()
         -- SMOOTHNESS SLIDER
         local smoothFrame = Instance.new("Frame")
         smoothFrame.Size = UDim2.new(1, 0, 0, 44)
-        smoothFrame.Position = UDim2.new(0, 0, 0, 166)
+        smoothFrame.Position = UDim2.new(0, 0, 0, 196)
         smoothFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
         smoothFrame.BackgroundTransparency = 0.2
         smoothFrame.BorderSizePixel = 1
@@ -406,10 +616,8 @@ local function carregarScript()
         local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
         local distance = (Vector2.new(pos.X, pos.Y) - center).Magnitude
         
-        -- Verifica se está dentro do FOV
         if distance > Settings.FOVRadius then return false end
         
-        -- Verifica WallCheck se ativado
         if Settings.WallCheck then
             local params = RaycastParams.new()
             params.FilterType = Enum.RaycastFilterType.Blacklist
@@ -421,7 +629,7 @@ local function carregarScript()
             local raycastResult = workspace:Raycast(camPos, direction, params)
             
             if raycastResult and not raycastResult.Instance:IsDescendantOf(player.Character) then
-                return false  -- Bloqueado por parede
+                return false
             end
         end
         
@@ -429,7 +637,7 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- FUNÇÃO: ENCONTRA O MELHOR ALVO (COM PREFERÊNCIA PELO ATUAL)
+    -- AIMBOT COM TARGET LOCK
     -- ============================================
     local function getClosestPlayer()
         local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -454,7 +662,6 @@ local function carregarScript()
             local distance = (Vector2.new(pos.X, pos.Y) - center).Magnitude
             if distance >= bestDistance then continue end
             
-            -- WallCheck
             if Settings.WallCheck then
                 local params = RaycastParams.new()
                 params.FilterType = Enum.RaycastFilterType.Blacklist
@@ -476,20 +683,15 @@ local function carregarScript()
         return bestPlayer, bestDistance
     end
 
-    -- ============================================
-    -- AIMBOT COM TARGET LOCK E FPS INDEPENDENTE
-    -- ============================================
     local function aimbot(deltaTime)
         if not Settings.Aimbot then return end
         
         local target = nil
         local targetDistance = nil
         
-        -- 🔥 VERIFICA SE O ALVO ATUAL AINDA É VÁLIDO
         if targetLocked and currentTarget then
             if isTargetValid(currentTarget) then
                 target = currentTarget
-                -- Atualiza a distância para manter o tracking
                 local part = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
                 if part then
                     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -497,13 +699,11 @@ local function carregarScript()
                     targetDistance = (Vector2.new(pos.X, pos.Y) - center).Magnitude
                 end
             else
-                -- 🔥 ALVO PERDEU VALIDADE: Libera o lock
                 targetLocked = false
                 currentTarget = nil
             end
         end
         
-        -- 🔥 SE NÃO TEM ALVO TRAVADO, PROCURA UM NOVO
         if not target then
             local newTarget, newDistance = getClosestPlayer()
             if newTarget then
@@ -514,14 +714,12 @@ local function carregarScript()
             end
         end
         
-        -- 🔥 SE NÃO ENCONTROU NENHUM ALVO, SAI
         if not target then
             currentTarget = nil
             targetLocked = false
             return
         end
         
-        -- 🔥 PEGA A PARTE DO ALVO E MIRA
         local part = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
         if not part then
             targetLocked = false
@@ -535,17 +733,10 @@ local function carregarScript()
         
         local targetCFrame = CFrame.lookAt(currentPos, currentPos + direction)
         
-        -- 🔥 SMOOTHNESS COM FPS INDEPENDENTE (CORRIGIDO)
         local smoothValue = math.clamp(Settings.Smoothness, 0.1, 1.0)
-        
-        -- 🔥 INTERPOLAÇÃO CONSISTENTE BASEADA EM DELTA TIME
-        -- Usa uma fórmula de "lerp por frame" que é consistente em qualquer FPS
-        -- A fórmula: alpha = 1 - (1 - smoothValue) ^ (deltaTime * 60)
-        -- Isso garante que o comportamento seja o mesmo em 30, 60 ou 120 FPS
         local adjustedSmooth = 1 - (1 - smoothValue) ^ (deltaTime * 60)
         adjustedSmooth = math.clamp(adjustedSmooth, 0.01, 1.0)
         
-        -- 🔥 APLICA A MIRA
         Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, adjustedSmooth)
     end
 
@@ -638,8 +829,14 @@ local function carregarScript()
     local function configurarEventos()
         for _, c in ipairs(espConnections) do if c then c:Disconnect() end end
         espConnections = {}
-        local pc = Players.PlayerAdded:Connect(function(p)
-            local cc = p.CharacterAdded:Connect(function(c)
+        
+        -- PlayerAdded
+        local playerAddedConn = Players.PlayerAdded:Connect(function(p)
+            -- Configurar ESP Line
+            setupPlayerLineEvents(p)
+            
+            -- CharacterAdded para ESP Highlights
+            local charAddedConn = p.CharacterAdded:Connect(function(c)
                 task.wait(0.5)
                 if espActive and Settings.ESPHighlights then
                     local tem = false
@@ -652,9 +849,16 @@ local function carregarScript()
                     end
                 end
             end)
-            table.insert(espConnections, cc)
+            table.insert(espConnections, charAddedConn)
         end)
-        table.insert(espConnections, pc)
+        table.insert(espConnections, playerAddedConn)
+        
+        -- Configurar jogadores já existentes
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer then
+                setupPlayerLineEvents(p)
+            end
+        end
     end
 
     local function configurarLoop()
@@ -674,18 +878,30 @@ local function carregarScript()
     criarMenu()
     configurarEventos()
     configurarLoop()
+    
+    -- Criar linhas para jogadores existentes se o ESP Line estiver ligado
+    if Settings.ESPLine then
+        createESPLineForAllPlayers()
+    end
 
+    -- 🔥 RENDERSTEPPED - ESP LINE ATUALIZA EM PC E MOBILE
     RunService.RenderStepped:Connect(function(deltaTime)
+        -- FOV (só PC)
         if Settings.FOVCircle then 
             atualizarFOV() 
         else 
             if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
         end
         
+        -- 🔥 ESP LINE - ATUALIZA EM PC E MOBILE (SEM RESTRIÇÃO)
+        if Settings.ESPLine and drawingAvailable then
+            updateAllESPLine()
+        end
+        
+        -- Aimbot
         if Settings.Aimbot then 
             aimbot(deltaTime)
         else
-            -- 🔥 RESETA O TARGET LOCK QUANDO O AIMBOT É DESLIGADO
             if currentTarget or targetLocked then
                 currentTarget = nil
                 targetLocked = false
