@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (ESP LINE MOBILE FIX)
+-- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (KEY EXPIRAÇÃO CORRIGIDA)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,18 +7,21 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
--- 🔑 SUAS KEYS AQUI
+-- 🔑 SUAS KEYS AQUI (ATUALIZE AS DATAS CONFORME NECESSÁRIO)
 -- ============================================
 local KeysValidas = {
-    -- KEYS DE 1 DIA
-    ["SAADX-90862MRHH9ZVP7N8"] = "08/08/2026",
-    ["SAADX-Y2MH6LJ603RD81XL"] = "08/08/2026",
+    -- 🔥 ATUALIZE AS DATAS AQUI!
+    -- Exemplo: ["SAADX-XXXX"] = "DIA/MES/ANO"
+    
+    -- KEYS DE 1 DIA (expira amanhã)
+    ["SAADX-90862MRHH9ZVP7N8"] = "09/08/2026",
+    ["SAADX-Y2MH6LJ603RD81XL"] = "09/08/2026",
     
     -- KEYS DE 7 DIAS
-    ["SAADX-72MMNHXRM4TJSAVY"] = "15/08/2026",
+    ["SAADX-72MMNHXRM4TJSAVY"] = "16/08/2026",
     
     -- KEYS DE 30 DIAS
-    ["SAADX-BM7NFX9A4BG563UB"] = "07/09/2026",
+    ["SAADX-BM7NFX9A4BG563UB"] = "08/09/2026",
 }
 
 -- ============================================
@@ -28,18 +31,41 @@ local function isMobile()
     return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
 end
 
+-- ============================================
+-- SISTEMA DE VERIFICAÇÃO CORRIGIDO (EXPIRAÇÃO GARANTIDA)
+-- ============================================
 local function verificarKey(key)
     local expira = KeysValidas[key]
-    if not expira then return false, "❌ KEY INVÁLIDA!" end
-    
-    local dia, mes, ano = expira:match("(%d+)/(%d+)/(%d+)")
-    if dia and mes and ano then
-        dia, mes, ano = tonumber(dia), tonumber(mes), tonumber(ano)
-        local t = os.date("*t")
-        if not (ano > t.year or (ano == t.year and mes > t.month) or (ano == t.year and mes == t.month and dia >= t.day)) then
-            return false, "❌ KEY EXPIRADA! (Expirou em " .. expira .. ")"
-        end
+    if not expira then
+        return false, "❌ KEY INVÁLIDA!"
     end
+    
+    -- Converte a data de expiração para números
+    local dia, mes, ano = expira:match("(%d+)/(%d+)/(%d+)")
+    if not dia or not mes or not ano then
+        return false, "❌ DATA INVÁLIDA! Contate o suporte."
+    end
+    
+    dia = tonumber(dia)
+    mes = tonumber(mes)
+    ano = tonumber(ano)
+    
+    -- Pega a data atual do sistema
+    local agora = os.date("*t")
+    local anoAtual = agora.year
+    local mesAtual = agora.month
+    local diaAtual = agora.day
+    
+    -- CONVERTE TUDO PARA NÚMERO (FORMATO: AAAAMMDD)
+    -- Exemplo: 03/08/2026 → 20260803
+    local dataExpira = ano * 10000 + mes * 100 + dia
+    local dataAtual = anoAtual * 10000 + mesAtual * 100 + diaAtual
+    
+    -- 🔥 COMPARA AS DATAS (SE DATA ATUAL > DATA EXPIRAÇÃO → EXPIRADA)
+    if dataAtual > dataExpira then
+        return false, "❌ KEY EXPIRADA! (Expirou em " .. expira .. ")"
+    end
+    
     return true, "✅ KEY VÁLIDA! Bem-vindo ao Saadx XIT!"
 end
 
@@ -58,7 +84,7 @@ local function carregarScript()
     }
     local fovDrawing = nil
     local espHighlights = {}
-    local espLines = {}          -- espLines[player] = { line, connections }
+    local espLines = {}
     local espConnections = {}
     local espUpdateConnection = nil
     local espActive = false
@@ -120,14 +146,10 @@ local function carregarScript()
     -- ESP LINE (FUNCIONA NO PC E MOBILE)
     -- ============================================
     
-    -- Função para criar a linha de um jogador
     local function createESPLineForPlayer(player)
         if not player or player == LocalPlayer then return end
         if not drawingAvailable then return end
         
-        -- 🔥 REMOVIDO: if mobile then return end
-        
-        -- Verifica se já existe uma linha para este jogador
         if espLines[player] then
             return
         end
@@ -138,7 +160,6 @@ local function carregarScript()
         local humanoid = character:FindFirstChild("Humanoid")
         if not humanoid or humanoid.Health <= 0 then return end
         
-        -- 🔥 CRIA A LINHA (FUNCIONA NO PC E MOBILE)
         local line = Drawing.new("Line")
         line.Color = Color3.fromRGB(255, 0, 0)
         line.Thickness = 2
@@ -153,7 +174,6 @@ local function carregarScript()
         }
     end
     
-    -- Função para atualizar a posição da linha
     local function updateESPLinePosition(player)
         if not player or player == LocalPlayer then return end
         
@@ -178,7 +198,6 @@ local function carregarScript()
             return
         end
         
-        -- 🔥 PROJETA A POSIÇÃO DO JOGADOR NA TELA
         local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
         
         if not onScreen or screenPos.Z <= 0 then
@@ -186,7 +205,6 @@ local function carregarScript()
             return
         end
         
-        -- 🔥 DESENHA A LINHA DA PARTE INFERIOR DA TELA ATÉ O JOGADOR
         local viewport = Camera.ViewportSize
         local bottomCenter = Vector2.new(viewport.X / 2, viewport.Y)
         
@@ -195,7 +213,6 @@ local function carregarScript()
         data.line.Visible = true
     end
     
-    -- Função para remover a linha de um jogador
     local function removeESPLineForPlayer(player)
         local data = espLines[player]
         if not data then return end
@@ -214,7 +231,6 @@ local function carregarScript()
         espLines[player] = nil
     end
     
-    -- Função para remover todas as linhas
     local function removeAllESPLine()
         for player, data in pairs(espLines) do
             if data and data.line then
@@ -225,7 +241,6 @@ local function carregarScript()
         espLines = {}
     end
     
-    -- Função para criar linhas para todos os jogadores
     local function createESPLineForAllPlayers()
         if not Settings.ESPLine then
             removeAllESPLine()
@@ -239,7 +254,6 @@ local function carregarScript()
         end
     end
     
-    -- Função para atualizar todas as linhas (chamada no RenderStepped)
     local function updateAllESPLine()
         if not Settings.ESPLine then
             return
@@ -250,11 +264,9 @@ local function carregarScript()
         end
     end
     
-    -- Configurar eventos de jogadores para ESP Line
     local function setupPlayerLineEvents(player)
         if player == LocalPlayer then return end
         
-        -- Limpar conexões antigas
         local data = espLines[player]
         if data and data.connections then
             for _, conn in ipairs(data.connections) do
@@ -265,7 +277,6 @@ local function carregarScript()
         
         local connections = {}
         
-        -- CharacterAdded: Criar linha
         local charAddedConn = player.CharacterAdded:Connect(function()
             task.wait(0.5)
             if Settings.ESPLine then
@@ -274,13 +285,11 @@ local function carregarScript()
         end)
         table.insert(connections, charAddedConn)
         
-        -- CharacterRemoving: Remover linha
         local charRemovingConn = player.CharacterRemoving:Connect(function()
             removeESPLineForPlayer(player)
         end)
         table.insert(connections, charRemovingConn)
         
-        -- PlayerRemoving: Remover linha
         local playerRemovingConn = player.AncestryChanged:Connect(function()
             if not player.Parent then
                 removeESPLineForPlayer(player)
@@ -310,7 +319,6 @@ local function carregarScript()
         mainFrame.ClipsDescendants = true
         mainFrame.Parent = screenGui
 
-        -- TÍTULO
         local title = Instance.new("Frame")
         title.Size = UDim2.new(1, 0, 0, 28)
         title.Position = UDim2.new(0, 0, 0, 0)
@@ -391,7 +399,6 @@ local function carregarScript()
         options.BorderSizePixel = 0
         options.Parent = mainFrame
 
-        -- TOGGLES
         local function criarToggle(text, setting, y)
             local f = Instance.new("Frame")
             f.Size = UDim2.new(1, 0, 0, 26)
@@ -830,12 +837,9 @@ local function carregarScript()
         for _, c in ipairs(espConnections) do if c then c:Disconnect() end end
         espConnections = {}
         
-        -- PlayerAdded
         local playerAddedConn = Players.PlayerAdded:Connect(function(p)
-            -- Configurar ESP Line
             setupPlayerLineEvents(p)
             
-            -- CharacterAdded para ESP Highlights
             local charAddedConn = p.CharacterAdded:Connect(function(c)
                 task.wait(0.5)
                 if espActive and Settings.ESPHighlights then
@@ -853,7 +857,6 @@ local function carregarScript()
         end)
         table.insert(espConnections, playerAddedConn)
         
-        -- Configurar jogadores já existentes
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer then
                 setupPlayerLineEvents(p)
@@ -879,26 +882,21 @@ local function carregarScript()
     configurarEventos()
     configurarLoop()
     
-    -- Criar linhas para jogadores existentes se o ESP Line estiver ligado
     if Settings.ESPLine then
         createESPLineForAllPlayers()
     end
 
-    -- 🔥 RENDERSTEPPED - ESP LINE ATUALIZA EM PC E MOBILE
     RunService.RenderStepped:Connect(function(deltaTime)
-        -- FOV (só PC)
         if Settings.FOVCircle then 
             atualizarFOV() 
         else 
             if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
         end
         
-        -- 🔥 ESP LINE - ATUALIZA EM PC E MOBILE (SEM RESTRIÇÃO)
         if Settings.ESPLine and drawingAvailable then
             updateAllESPLine()
         end
         
-        -- Aimbot
         if Settings.Aimbot then 
             aimbot(deltaTime)
         else
