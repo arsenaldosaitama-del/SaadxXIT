@@ -15,7 +15,7 @@ local KeysValidas = {
     
     -- KEYS DE 1 DIA (expira amanhã)
     ["SAADX-90862MRHH9ZVP7N8"] = "09/08/2026",
-    ["SAADX-Y2MH6LJ603RD81XL"] = "09/08/2026",
+    ["SAADX-Y2MH6LJ603RD81XL"] = "08/08/2026",
     
     -- KEYS DE 7 DIAS
     ["SAADX-72MMNHXRM4TJSAVY"] = "16/08/2026",
