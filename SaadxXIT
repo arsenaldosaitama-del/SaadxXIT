@@ -1,4 +1,4 @@
--- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (COM DEBUG)
+-- Saadx XIT | discord.gg/GSWQ3PzTHj - Fluxo PvP Aimbot Script (RAYFIELD CLÁSSICO)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,18 +7,29 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
+-- 🔑 CARREGAR RAYFIELD CLÁSSICO
+-- ============================================
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- ============================================
 -- 🔑 SUAS KEYS AQUI
 -- ============================================
 local KeysValidas = {
-    -- 🔥 COLOQUE UMA KEY COM DATA ANTIGA PARA TESTAR
-    ["SAADX-90862MRHH9ZVP7N8"] = "08/08/2026",  -- JÁ EXPIRADA (se hoje for 09/08)
-    ["SAADX-Y2MH6LJ603RD81XL"] = "08/08/2026",
+    ["SAADX-90862MRHH9ZVP7N8"] = "10/08/2026",
+    ["SAADX-5QOMPQLGHU27GZJV"] = "10/08/2026",
     ["SAADX-72MMNHXRM4TJSAVY"] = "16/08/2026",
     ["SAADX-BM7NFX9A4BG563UB"] = "08/09/2026",
 }
 
 -- ============================================
--- SISTEMA DE VERIFICAÇÃO COM DEBUG
+-- DETECTAR DISPOSITIVO
+-- ============================================
+local function isMobile()
+    return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+end
+
+-- ============================================
+-- SISTEMA DE VERIFICAÇÃO
 -- ============================================
 local function verificarKey(key)
     local expira = KeysValidas[key]
@@ -43,27 +54,11 @@ local function verificarKey(key)
     local dataExpira = ano * 10000 + mes * 100 + dia
     local dataAtual = anoAtual * 10000 + mesAtual * 100 + diaAtual
     
-    -- 🔥 DEBUG (MOSTRA NO CONSOLE)
-    print("========================================")
-    print("🔍 VERIFICANDO KEY: " .. key)
-    print("📅 DATA DE EXPIRAÇÃO: " .. expira .. " (" .. dataExpira .. ")")
-    print("📅 DATA ATUAL DO SISTEMA: " .. diaAtual .. "/" .. mesAtual .. "/" .. anoAtual .. " (" .. dataAtual .. ")")
-    print("========================================")
-    
     if dataAtual > dataExpira then
-        print("❌ KEY EXPIRADA! (dataAtual > dataExpira)")
         return false, "❌ KEY EXPIRADA! (Expirou em " .. expira .. ")"
     end
     
-    print("✅ KEY VÁLIDA!")
     return true, "✅ KEY VÁLIDA! Bem-vindo ao Saadx XIT!"
-end
-
--- ============================================
--- DETECTAR DISPOSITIVO
--- ============================================
-local function isMobile()
-    return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
 end
 
 -- ============================================
@@ -87,16 +82,11 @@ local function carregarScript()
     local espActive = false
     local lastESPUpdate = 0
     local ESP_UPDATE_INTERVAL = 1.5
-    local menuCriado = false
     local mobile = isMobile()
     local targetLocked = false
     local currentTarget = nil
 
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "SaadxXIT"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = LocalPlayer.PlayerGui
-
+    -- Verificar se Drawing está disponível
     local drawingAvailable = pcall(function()
         local testLine = Drawing.new("Line")
         testLine:Remove()
@@ -295,305 +285,142 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- MENU
+    -- 🔥 RAYFIELD CLÁSSICO - WINDOW
     -- ============================================
-    local function criarMenu()
-        if menuCriado then return end
-        menuCriado = true
-        
-        local mainFrame = Instance.new("Frame")
-        mainFrame.Size = UDim2.new(0, 240, 0, 330)
-        mainFrame.Position = UDim2.new(0.5, -120, 0.5, -165)
-        mainFrame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
-        mainFrame.BackgroundTransparency = 0.1
-        mainFrame.BorderSizePixel = 2
-        mainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        mainFrame.ClipsDescendants = true
-        mainFrame.Parent = screenGui
+    local Window = Rayfield:CreateWindow({
+        Name = "Saadx Store",
+        LoadingTitle = "Saadx Store",
+        LoadingSubtitle = "by Saadx",
+        ConfigurationSaving = {
+            Enabled = true,
+            FolderName = "SaadxStore",
+            FileName = "Settings"
+        },
+        Discord = {
+            Enabled = false,
+            Invite = "GSWQ3PzTHj",
+            RememberJoins = true
+        },
+        KeySystem = false,
+        KeySettings = {
+            Title = "Saadx Store",
+            Subtitle = "Key System",
+            Note = "Join the discord for the key!",
+            FileName = "Key",
+            SaveKey = true,
+            GrabKeyFromSite = false
+        }
+    })
 
-        local title = Instance.new("Frame")
-        title.Size = UDim2.new(1, 0, 0, 28)
-        title.Position = UDim2.new(0, 0, 0, 0)
-        title.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-        title.BackgroundTransparency = 0
-        title.BorderSizePixel = 0
-        title.Parent = mainFrame
+    -- 🔥 TAB: AIMBOT
+    local AimbotTab = Window:CreateTab("Aimbot", 93364949241311)
 
-        local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
-        local function update(input)
-            local delta = input.Position - dragStart
-            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-        title.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging, dragStart, startPos = true, input.Position, mainFrame.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then dragging = false end
-                end)
+    -- Aimbot Toggle
+    AimbotTab:CreateToggle({
+        Name = "Aimbot",
+        CurrentValue = false,
+        Flag = "Aimbot",
+        Callback = function(Value)
+            Settings.Aimbot = Value
+            if not Value then
+                currentTarget = nil
+                targetLocked = false
             end
-        end)
-        title.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-        end)
-        UserInputService.InputChanged:Connect(function(input)
-            if input == dragInput and dragging then update(input) end
-        end)
+        end,
+    })
 
-        local titleText = Instance.new("TextLabel")
-        titleText.Size = UDim2.new(0.85, 0, 1, 0)
-        titleText.Position = UDim2.new(0, 6, 0, 0)
-        titleText.BackgroundTransparency = 1
-        titleText.Text = "Saadx XIT | discord.gg/GSWQ3PzTHj"
-        titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        titleText.TextSize = 9
-        titleText.Font = Enum.Font.GothamBold
-        titleText.TextXAlignment = Enum.TextXAlignment.Left
-        titleText.TextYAlignment = Enum.TextYAlignment.Center
-        titleText.Parent = title
-
-        local closeBtn = Instance.new("TextButton")
-        closeBtn.Size = UDim2.new(0, 18, 0, 18)
-        closeBtn.Position = UDim2.new(1, -22, 0, 5)
-        closeBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        closeBtn.Text = "X"
-        closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        closeBtn.TextSize = 11
-        closeBtn.Font = Enum.Font.GothamBold
-        closeBtn.BorderSizePixel = 0
-        closeBtn.Parent = title
-        closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
-
-        local minBtn = Instance.new("TextButton")
-        minBtn.Size = UDim2.new(0, 18, 0, 18)
-        minBtn.Position = UDim2.new(1, -44, 0, 5)
-        minBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        minBtn.Text = "-"
-        minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        minBtn.TextSize = 11
-        minBtn.Font = Enum.Font.GothamBold
-        minBtn.BorderSizePixel = 0
-        minBtn.Parent = title
-
-        local minimized = false
-        minBtn.MouseButton1Click:Connect(function()
-            minimized = not minimized
-            mainFrame.Size = minimized and UDim2.new(0, 240, 0, 28) or UDim2.new(0, 240, 0, 330)
-            for _, child in ipairs(mainFrame:GetChildren()) do
-                if child ~= title then child.Visible = not minimized end
+    -- FOV Circle Toggle
+    AimbotTab:CreateToggle({
+        Name = "FOV Circle",
+        CurrentValue = false,
+        Flag = "FOVCircle",
+        Callback = function(Value)
+            Settings.FOVCircle = Value
+            if Value and not mobile then
+                criarFOV()
+            elseif not Value then
+                if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
             end
-        end)
+        end,
+    })
 
-        local options = Instance.new("Frame")
-        options.Size = UDim2.new(1, 0, 1, -28)
-        options.Position = UDim2.new(0, 0, 0, 28)
-        options.BackgroundColor3 = Color3.fromRGB(10, 0, 0)
-        options.BackgroundTransparency = 0.3
-        options.BorderSizePixel = 0
-        options.Parent = mainFrame
+    -- Wall Check Toggle
+    AimbotTab:CreateToggle({
+        Name = "Wall Check",
+        CurrentValue = false,
+        Flag = "WallCheck",
+        Callback = function(Value)
+            Settings.WallCheck = Value
+        end,
+    })
 
-        local function criarToggle(text, setting, y)
-            local f = Instance.new("Frame")
-            f.Size = UDim2.new(1, 0, 0, 26)
-            f.Position = UDim2.new(0, 0, 0, y)
-            f.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-            f.BackgroundTransparency = 0.2
-            f.BorderSizePixel = 1
-            f.BorderColor3 = Color3.fromRGB(255, 0, 0)
-            f.Parent = options
+    -- FOV Radius Slider
+    AimbotTab:CreateSlider({
+        Name = "FOV Radius",
+        Range = {50, 350},
+        Increment = 10,
+        Suffix = "px",
+        CurrentValue = 150,
+        Flag = "FOVRadius",
+        Callback = function(Value)
+            Settings.FOVRadius = Value
+        end,
+    })
 
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(0.65, 0, 1, 0)
-            label.Position = UDim2.new(0, 8, 0, 0)
-            label.BackgroundTransparency = 1
-            label.Text = text
-            label.TextColor3 = Color3.fromRGB(255, 255, 255)
-            label.TextSize = 12
-            label.Font = Enum.Font.Gotham
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            label.Parent = f
+    -- Smoothness Slider
+    AimbotTab:CreateSlider({
+        Name = "Smoothness",
+        Range = {0.1, 1.0},
+        Increment = 0.1,
+        Suffix = "",
+        CurrentValue = 0.3,
+        Flag = "Smoothness",
+        Callback = function(Value)
+            Settings.Smoothness = Value
+        end,
+    })
 
-            local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(0, 40, 0, 18)
-            btn.Position = UDim2.new(0.82, 0, 0.5, -9)
-            btn.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
-            btn.Text = "OFF"
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            btn.TextSize = 10
-            btn.Font = Enum.Font.GothamBold
-            btn.BorderSizePixel = 1
-            btn.BorderColor3 = Color3.fromRGB(255, 0, 0)
-            btn.Parent = f
+    -- 🔥 TAB: ESP
+    local ESPTab = Window:CreateTab("ESP", 93364949241312)
 
-            btn.MouseButton1Click:Connect(function()
-                Settings[setting] = not Settings[setting]
-                btn.BackgroundColor3 = Settings[setting] and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(100, 0, 0)
-                btn.Text = Settings[setting] and "ON" or "OFF"
-                
-                if setting == "ESPHighlights" then
-                    if Settings.ESPHighlights then ativarESP() else desativarESP() end
-                end
-                
-                if setting == "ESPLine" then
-                    if Settings.ESPLine then
-                        createESPLineForAllPlayers()
-                    else
-                        removeAllESPLine()
-                    end
-                end
-            end)
-            return btn
-        end
+    -- ESP Highlights Toggle
+    ESPTab:CreateToggle({
+        Name = "ESP Highlights",
+        CurrentValue = false,
+        Flag = "ESPHighlights",
+        Callback = function(Value)
+            Settings.ESPHighlights = Value
+            if Value then ativarESP() else desativarESP() end
+        end,
+    })
 
-        criarToggle("Aimbot", "Aimbot", 4)
-        criarToggle("FOV Circle", "FOVCircle", 32)
-        criarToggle("Wall Check", "WallCheck", 60)
-        criarToggle("ESP Highlights", "ESPHighlights", 88)
-        criarToggle("ESP Line", "ESPLine", 116)
-
-        -- FOV SLIDER
-        local fovFrameSlider = Instance.new("Frame")
-        fovFrameSlider.Size = UDim2.new(1, 0, 0, 44)
-        fovFrameSlider.Position = UDim2.new(0, 0, 0, 148)
-        fovFrameSlider.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        fovFrameSlider.BackgroundTransparency = 0.2
-        fovFrameSlider.BorderSizePixel = 1
-        fovFrameSlider.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        fovFrameSlider.Parent = options
-
-        local fovLabel = Instance.new("TextLabel")
-        fovLabel.Size = UDim2.new(1, 0, 0, 16)
-        fovLabel.Position = UDim2.new(0, 8, 0, 2)
-        fovLabel.BackgroundTransparency = 1
-        fovLabel.Text = "FOV: 150"
-        fovLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        fovLabel.TextSize = 11
-        fovLabel.Font = Enum.Font.Gotham
-        fovLabel.TextXAlignment = Enum.TextXAlignment.Left
-        fovLabel.Parent = fovFrameSlider
-
-        local fovSlider = Instance.new("Frame")
-        fovSlider.Size = UDim2.new(0.82, 0, 0, 6)
-        fovSlider.Position = UDim2.new(0.09, 0, 0.6, 0)
-        fovSlider.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
-        fovSlider.BorderSizePixel = 0
-        fovSlider.Parent = fovFrameSlider
-
-        local fovFill = Instance.new("Frame")
-        fovFill.Size = UDim2.new((Settings.FOVRadius-50)/350, 0, 1, 0)
-        fovFill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        fovFill.BorderSizePixel = 0
-        fovFill.Parent = fovSlider
-
-        local fovBtn = Instance.new("TextButton")
-        fovBtn.Size = UDim2.new(0, 14, 0, 14)
-        fovBtn.Position = UDim2.new((Settings.FOVRadius-50)/350, -7, 0.5, -7)
-        fovBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        fovBtn.Text = ""
-        fovBtn.BorderSizePixel = 2
-        fovBtn.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        fovBtn.Parent = fovSlider
-
-        local dragFOV = false
-        fovBtn.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragFOV = true end
-        end)
-        UserInputService.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragFOV = false end
-        end)
-        fovBtn.MouseMoved:Connect(function()
-            if dragFOV then
-                local mp, sp, ss = UserInputService:GetMouseLocation(), fovSlider.AbsolutePosition, fovSlider.AbsoluteSize
-                local p = math.clamp((mp.X - sp.X) / ss.X, 0, 1)
-                Settings.FOVRadius = math.floor(50 + p * 350)
-                fovFill.Size = UDim2.new(p, 0, 1, 0)
-                fovBtn.Position = UDim2.new(p, -7, 0.5, -7)
-                fovLabel.Text = "FOV: " .. Settings.FOVRadius
+    -- ESP Line Toggle
+    ESPTab:CreateToggle({
+        Name = "ESP Line",
+        CurrentValue = false,
+        Flag = "ESPLine",
+        Callback = function(Value)
+            Settings.ESPLine = Value
+            if Value then
+                createESPLineForAllPlayers()
+            else
+                removeAllESPLine()
             end
-        end)
-        fovBtn.InputChanged:Connect(function(i)
-            if dragFOV and i.UserInputType == Enum.UserInputType.Touch then
-                local tp, sp, ss = i.Position, fovSlider.AbsolutePosition, fovSlider.AbsoluteSize
-                local p = math.clamp((tp.X - sp.X) / ss.X, 0, 1)
-                Settings.FOVRadius = math.floor(50 + p * 350)
-                fovFill.Size = UDim2.new(p, 0, 1, 0)
-                fovBtn.Position = UDim2.new(p, -7, 0.5, -7)
-                fovLabel.Text = "FOV: " .. Settings.FOVRadius
-            end
-        end)
+        end,
+    })
 
-        -- SMOOTHNESS SLIDER
-        local smoothFrame = Instance.new("Frame")
-        smoothFrame.Size = UDim2.new(1, 0, 0, 44)
-        smoothFrame.Position = UDim2.new(0, 0, 0, 196)
-        smoothFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        smoothFrame.BackgroundTransparency = 0.2
-        smoothFrame.BorderSizePixel = 1
-        smoothFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        smoothFrame.Parent = options
+    -- 🔥 TAB: INFO
+    local InfoTab = Window:CreateTab("Info", 93364949241313)
 
-        local smoothLabel = Instance.new("TextLabel")
-        smoothLabel.Size = UDim2.new(1, 0, 0, 16)
-        smoothLabel.Position = UDim2.new(0, 8, 0, 2)
-        smoothLabel.BackgroundTransparency = 1
-        smoothLabel.Text = "Smooth: 0.3"
-        smoothLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        smoothLabel.TextSize = 11
-        smoothLabel.Font = Enum.Font.Gotham
-        smoothLabel.TextXAlignment = Enum.TextXAlignment.Left
-        smoothLabel.Parent = smoothFrame
+    InfoTab:CreateLabel("Saadx Store - Fluxo PvP Aimbot")
+    InfoTab:CreateLabel("discord.gg/GSWQ3PzTHj")
 
-        local smoothSlider = Instance.new("Frame")
-        smoothSlider.Size = UDim2.new(0.82, 0, 0, 6)
-        smoothSlider.Position = UDim2.new(0.09, 0, 0.6, 0)
-        smoothSlider.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
-        smoothSlider.BorderSizePixel = 0
-        smoothSlider.Parent = smoothFrame
-
-        local smoothFill = Instance.new("Frame")
-        smoothFill.Size = UDim2.new((Settings.Smoothness-0.1)/0.9, 0, 1, 0)
-        smoothFill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        smoothFill.BorderSizePixel = 0
-        smoothFill.Parent = smoothSlider
-
-        local smoothBtn = Instance.new("TextButton")
-        smoothBtn.Size = UDim2.new(0, 14, 0, 14)
-        smoothBtn.Position = UDim2.new((Settings.Smoothness-0.1)/0.9, -7, 0.5, -7)
-        smoothBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        smoothBtn.Text = ""
-        smoothBtn.BorderSizePixel = 2
-        smoothBtn.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        smoothBtn.Parent = smoothSlider
-
-        local dragSmooth = false
-        smoothBtn.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragSmooth = true end
-        end)
-        UserInputService.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragSmooth = false end
-        end)
-        smoothBtn.MouseMoved:Connect(function()
-            if dragSmooth then
-                local mp, sp, ss = UserInputService:GetMouseLocation(), smoothSlider.AbsolutePosition, smoothSlider.AbsoluteSize
-                local p = math.clamp((mp.X - sp.X) / ss.X, 0, 1)
-                Settings.Smoothness = math.round((0.1 + p * 0.9) * 10) / 10
-                smoothFill.Size = UDim2.new(p, 0, 1, 0)
-                smoothBtn.Position = UDim2.new(p, -7, 0.5, -7)
-                smoothLabel.Text = "Smooth: " .. string.format("%.1f", Settings.Smoothness)
-            end
-        end)
-        smoothBtn.InputChanged:Connect(function(i)
-            if dragSmooth and i.UserInputType == Enum.UserInputType.Touch then
-                local tp, sp, ss = i.Position, smoothSlider.AbsolutePosition, smoothSlider.AbsoluteSize
-                local p = math.clamp((tp.X - sp.X) / ss.X, 0, 1)
-                Settings.Smoothness = math.round((0.1 + p * 0.9) * 10) / 10
-                smoothFill.Size = UDim2.new(p, 0, 1, 0)
-                smoothBtn.Position = UDim2.new(p, -7, 0.5, -7)
-                smoothLabel.Text = "Smooth: " .. string.format("%.1f", Settings.Smoothness)
-            end
-        end)
-
-        print("✅ Menu carregado!")
-    end
+    InfoTab:CreateButton({
+        Name = "Fechar Menu",
+        Callback = function()
+            Rayfield:Destroy()
+        end,
+    })
 
     -- ============================================
     -- AIMBOT
@@ -859,7 +686,6 @@ local function carregarScript()
     -- ============================================
     -- INICIALIZAR
     -- ============================================
-    criarMenu()
     configurarEventos()
     configurarLoop()
     
@@ -898,7 +724,7 @@ local function carregarScript()
     if Settings.FOVCircle and not mobile then criarFOV() end
     if Settings.ESPHighlights then ativarESP() end
 
-    print("✅ Saadx XIT carregado! (Mobile: " .. tostring(mobile) .. ")")
+    print("✅ Saadx XIT carregado com Rayfield Clássico! (Mobile: " .. tostring(mobile) .. ")")
 end
 
 -- ============================================
@@ -1012,7 +838,7 @@ end
 -- INICIAR
 -- ============================================
 print("========================================")
-print("🔐 SAADX XIT")
+print("🔐 SAADX XIT - Rayfield Clássico")
 print("📌 Digite sua KEY")
 print("========================================")
 criarTelaKey()
