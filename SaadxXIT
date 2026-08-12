@@ -10,7 +10,6 @@ local LocalPlayer = Players.LocalPlayer
 -- 🔑 SUAS KEYS AQUI
 -- ============================================
 local KeysValidas = {
-    -- 🔥 COLOQUE UMA KEY COM DATA ANTIGA PARA TESTAR
     ["SAADX-90862MRHH9ZVP7N8"] = "08/08/2026",
     ["SAADX-Y2MH6LJ603RD81XL"] = "10/08/2026",
     ["SAADX-72MMNHXRM4TJSAVY"] = "16/08/2026",
@@ -18,7 +17,7 @@ local KeysValidas = {
 }
 
 -- ============================================
--- SISTEMA DE VERIFICAÇÃO COM DEBUG
+-- SISTEMA DE VERIFICAÇÃO
 -- ============================================
 local function verificarKey(key)
     local expira = KeysValidas[key]
@@ -83,6 +82,8 @@ local function carregarScript()
     local targetLocked = false
     local currentTarget = nil
     local spinConnection = nil
+    local boxHighlights = {}
+    local skeletonHighlights = {}
 
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "SaadxXIT"
@@ -156,11 +157,11 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- ESP LINE
+    -- ESP LINE (SÓ PC) - PADRÃO ORIGINAL
     -- ============================================
     local function createESPLineForPlayer(player)
         if not player or player == LocalPlayer then return end
-        if not drawingAvailable then return end
+        if not drawingAvailable or mobile then return end
         if espLines[player] then return end
         
         local character = player.Character
@@ -170,9 +171,9 @@ local function carregarScript()
         if not humanoid or humanoid.Health <= 0 then return end
         
         local line = Drawing.new("Line")
-        line.Color = Color3.fromRGB(255, 255, 255)
-        line.Thickness = 2
-        line.Transparency = 0.3
+        line.Color = Color3.fromRGB(255, 255, 255)  -- Branco
+        line.Thickness = 2                          -- Espessura padrão
+        line.Transparency = 1                     -- Transparência padrão
         line.Visible = false
         line.ZIndex = 5
         
@@ -185,6 +186,7 @@ local function carregarScript()
     
     local function updateESPLinePosition(player)
         if not player or player == LocalPlayer then return end
+        if mobile then return end
         
         local data = espLines[player]
         if not data or not data.line then return end
@@ -223,6 +225,7 @@ local function carregarScript()
     end
     
     local function removeESPLineForPlayer(player)
+        if mobile then return end
         local data = espLines[player]
         if not data then return end
         
@@ -241,6 +244,7 @@ local function carregarScript()
     end
     
     local function removeAllESPLine()
+        if mobile then return end
         for player, data in pairs(espLines) do
             if data and data.line then
                 data.line:Remove()
@@ -251,6 +255,7 @@ local function carregarScript()
     end
     
     local function createESPLineForAllPlayers()
+        if mobile then return end
         if not Settings.ESPLine then
             removeAllESPLine()
             return
@@ -264,6 +269,7 @@ local function carregarScript()
     end
     
     local function updateAllESPLine()
+        if mobile then return end
         if not Settings.ESPLine then
             return
         end
@@ -274,30 +280,54 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- ESP BOX (BRANCO)
+    -- ESP BOX (PC = Drawing, Mobile = Highlight)
     -- ============================================
     local function createESPBoxForPlayer(player)
         if not player or player == LocalPlayer then return end
-        if not drawingAvailable then return end
         if espBoxes[player] then return end
+        if boxHighlights[player] then return end
 
         local character = player.Character
         if not character then return end
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         if not humanoid or humanoid.Health <= 0 then return end
 
-        local box = Drawing.new("Square")
-        box.Color = Color3.fromRGB(255, 255, 255)
-        box.Thickness = 2
-        box.Filled = false
-        box.Transparency = 1
-        box.Visible = false
-        box.ZIndex = 5
+        if mobile then
+            -- Mobile: Usa Highlight
+            local highlight = Instance.new("Highlight")
+            highlight.Adornee = character
+            highlight.FillColor = Color3.fromRGB(255, 255, 255)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.OutlineTransparency = 0.3
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.Parent = character
+            
+            boxHighlights[player] = {
+                highlight = highlight,
+                connections = {}
+            }
+        else
+            -- PC: Usa Drawing
+            if not drawingAvailable then return end
+            local box = Drawing.new("Square")
+            box.Color = Color3.fromRGB(255, 255, 255)
+            box.Thickness = 2
+            box.Filled = false
+            box.Transparency = 1
+            box.Visible = false
+            box.ZIndex = 5
 
-        espBoxes[player] = { box = box, connections = {} }
+            espBoxes[player] = { box = box, connections = {} }
+        end
     end
 
     local function updateESPBoxPosition(player)
+        if mobile then
+            -- Mobile: Highlight já é automático
+            return
+        end
+        
         local data = espBoxes[player]
         if not data or not data.box then return end
 
@@ -329,14 +359,23 @@ local function carregarScript()
 
     local function removeESPBoxForPlayer(player)
         local data = espBoxes[player]
-        if not data then return end
-        if data.connections then
-            for _, conn in ipairs(data.connections) do
-                if conn then conn:Disconnect() end
+        if data then
+            if data.connections then
+                for _, conn in ipairs(data.connections) do
+                    if conn then conn:Disconnect() end
+                end
             end
+            if data.box then data.box:Remove() end
+            espBoxes[player] = nil
         end
-        if data.box then data.box:Remove() end
-        espBoxes[player] = nil
+        
+        local highlightData = boxHighlights[player]
+        if highlightData then
+            if highlightData.highlight then
+                highlightData.highlight:Destroy()
+            end
+            boxHighlights[player] = nil
+        end
     end
 
     local function removeAllESPBox()
@@ -344,6 +383,11 @@ local function carregarScript()
             removeESPBoxForPlayer(player)
         end
         espBoxes = {}
+        
+        for player in pairs(boxHighlights) do
+            removeESPBoxForPlayer(player)
+        end
+        boxHighlights = {}
     end
 
     local function createESPBoxForAllPlayers()
@@ -359,6 +403,7 @@ local function carregarScript()
     end
 
     local function updateAllESPBox()
+        if mobile then return end
         if not Settings.ESPBox then return end
         for player in pairs(espBoxes) do
             updateESPBoxPosition(player)
@@ -366,7 +411,7 @@ local function carregarScript()
     end
 
     -- ============================================
-    -- ESP SKELETON
+    -- ESP SKELETON (PC = Drawing, Mobile = Seleciona Partes)
     -- ============================================
     local skeletonConnections = {
         R15 = {
@@ -406,11 +451,62 @@ local function carregarScript()
 
     local function createESPSkeletonForPlayer(player)
         if not player or player == LocalPlayer then return end
-        if not drawingAvailable then return end
         if espSkeletons[player] then return end
+        if skeletonHighlights[player] then return end
 
         local character = player.Character
         if not character then return end
+
+        if mobile then
+            -- Mobile: Cria Highlights para cada parte do corpo
+            local connections = {}
+            
+            -- Lista de partes do corpo para destacar
+            local bodyParts = {}
+            local rig = getSkeletonRig(character)
+            
+            if rig == "R15" then
+                bodyParts = {
+                    "Head", "UpperTorso", "LowerTorso",
+                    "LeftUpperArm", "LeftLowerArm", "LeftHand",
+                    "RightUpperArm", "RightLowerArm", "RightHand",
+                    "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
+                    "RightUpperLeg", "RightLowerLeg", "RightFoot"
+                }
+            elseif rig == "R6" then
+                bodyParts = {
+                    "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
+                }
+            end
+            
+            -- Cria Highlight para cada parte
+            for _, partName in ipairs(bodyParts) do
+                local part = character:FindFirstChild(partName)
+                if part then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Adornee = part
+                    highlight.FillColor = Color3.fromRGB(255, 50, 50)
+                    highlight.FillTransparency = 0.7
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.OutlineTransparency = 0.2
+                    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    highlight.Parent = part
+                    table.insert(connections, highlight)
+                end
+            end
+            
+            if #connections > 0 then
+                skeletonHighlights[player] = {
+                    highlights = connections,
+                    connections = {}
+                }
+            end
+            return
+        end
+
+        -- PC: Usa Drawing
+        if not drawingAvailable then return end
+        
         local rig = getSkeletonRig(character)
         if not rig then return end
 
@@ -432,6 +528,8 @@ local function carregarScript()
     end
 
     local function updateESPSkeletonPosition(player)
+        if mobile then return end -- Mobile usa Highlight automático
+        
         local data = espSkeletons[player]
         if not data or not data.lines then return end
 
@@ -473,18 +571,32 @@ local function carregarScript()
 
     local function removeESPSkeletonForPlayer(player)
         local data = espSkeletons[player]
-        if not data then return end
-        if data.lines then
-            for _, line in ipairs(data.lines) do
-                if line then line:Remove() end
+        if data then
+            if data.lines then
+                for _, line in ipairs(data.lines) do
+                    if line then line:Remove() end
+                end
             end
+            espSkeletons[player] = nil
         end
-        espSkeletons[player] = nil
+        
+        local highlightData = skeletonHighlights[player]
+        if highlightData then
+            if highlightData.highlights then
+                for _, h in ipairs(highlightData.highlights) do
+                    if h then h:Destroy() end
+                end
+            end
+            skeletonHighlights[player] = nil
+        end
     end
 
     local function createESPSkeletonForAllPlayers()
         if not Settings.ESPSkeleton then
             for player in pairs(espSkeletons) do
+                removeESPSkeletonForPlayer(player)
+            end
+            for player in pairs(skeletonHighlights) do
                 removeESPSkeletonForPlayer(player)
             end
             return
@@ -497,6 +609,7 @@ local function carregarScript()
     end
 
     local function updateAllESPSkeleton()
+        if mobile then return end
         if not Settings.ESPSkeleton then return end
         for player in pairs(espSkeletons) do
             updateESPSkeletonPosition(player)
@@ -518,7 +631,7 @@ local function carregarScript()
         
         local charAddedConn = player.CharacterAdded:Connect(function()
             task.wait(0.5)
-            if Settings.ESPLine then
+            if not mobile and Settings.ESPLine then
                 createESPLineForPlayer(player)
             end
             if Settings.ESPSkeleton then
@@ -823,6 +936,9 @@ local function carregarScript()
                         createESPSkeletonForAllPlayers()
                     else
                         for player in pairs(espSkeletons) do
+                            removeESPSkeletonForPlayer(player)
+                        end
+                        for player in pairs(skeletonHighlights) do
                             removeESPSkeletonForPlayer(player)
                         end
                     end
@@ -1139,7 +1255,7 @@ local function carregarScript()
     criarMenu()
     configurarEventos()
     
-    if Settings.ESPLine then
+    if not mobile and Settings.ESPLine then
         createESPLineForAllPlayers()
     end
 
@@ -1150,15 +1266,15 @@ local function carregarScript()
             if fovDrawing then fovDrawing:Remove() fovDrawing = nil end
         end
         
-        if Settings.ESPLine and drawingAvailable then
+        if not mobile and Settings.ESPLine and drawingAvailable then
             updateAllESPLine()
         end
 
-        if Settings.ESPBox and drawingAvailable then
+        if not mobile and Settings.ESPBox and drawingAvailable then
             updateAllESPBox()
         end
 
-        if Settings.ESPSkeleton and drawingAvailable then
+        if not mobile and Settings.ESPSkeleton and drawingAvailable then
             updateAllESPSkeleton()
         end
         
