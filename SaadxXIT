@@ -15,6 +15,7 @@ local KeysValidas = {
     ["SAADX-Y2MH6LJ603RD81XL"] = "10/08/2026",
     ["SAADX-72MMNHXRM4TJSAVY"] = "16/08/2026",
     ["SAADX-BM7NFX9A4BG563UB"] = "08/09/2026",
+    ["SAADX-BM7NFX9A4BG563UB"] = "12/08/2026",
 }
 
 -- ============================================
