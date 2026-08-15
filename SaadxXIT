@@ -13,6 +13,7 @@ local KeysValidas = {
     -- 🔥 COLOQUE UMA KEY COM DATA ANTIGA PARA TESTAR
     ["SAADX-72MMNHXRM4TJSAVY"] = "16/08/2026",
     ["SAADX-DK6YB47IX5EAEZ4D"] = "16/08/2026",
+    ["SAADX-090OR82JOR27TION"] = "17/08/2026",
 }
 
 -- ============================================
