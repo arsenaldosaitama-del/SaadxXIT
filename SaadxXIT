@@ -11,7 +11,7 @@ local LocalPlayer = Players.LocalPlayer
 -- ============================================
 local KeysValidas = {
     -- 🔥 COLOQUE UMA KEY COM DATA ANTIGA PARA TESTAR
-    ["SAADX-KHMN29F1JKE77IOG"] = "04/10/2026",
+    ["SAADX-N3P6PARIV7IZYD34"] = "07/10/2026",
 }
 
 -- ============================================
